@@ -181,7 +181,7 @@ MonoBehaviour:
   minSeparationDistance: 0.8
   retreatDistance: 1.2
   stuckVelocityThreshold: 0.05
-  stunDuration: 1
+  stunDuration: 100
   knockbackForce: 6
   chaseSpeed: 3.8
   patrolSpeed: 2.2
