@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -7,60 +6,68 @@ using UnityEngine.AI;
 [RequireComponent(typeof(Rigidbody))]
 public class EnemyAI : MonoBehaviour
 {
-    // Finite State Machine states
-    private enum State { Patrol, Wander, Chase, Attack, Stunned }
-    private State state = State.Patrol;
+    // Simple FSM
+    private enum State { Idle, Patrol, Wander, Chase, Attack, Stunned }
+    private State state = State.Idle;
 
-    // Main components
+    // Components
     private NavMeshAgent agent;
     private Rigidbody rb;
     private Transform player;
 
-    // Patrol / wander settings
-    [Header("Patrol & Wander")]
-    public Transform[] patrolPoints;   // points to move between
-    public float wanderRadius = 8f;    // random movement range
-    public float patrolPointTolerance = 1f;
-    private int currentPatrolIndex = 0;
-    private Vector3 wanderTarget;
+    // Idle
+    [Header("Idle")]
+    public float idleTime = 2f;
+    private float idleTimer;
 
-    // Vision and detection
+    // Patrol / wander
+    [Header("Movement")]
+    public Transform[] patrolPoints;
+    public float wanderRadius = 8f;
+    private int patrolIndex = 0;
+
+    // Perception
     [Header("Perception")]
     public float sightRange = 12f;
-    public float sightAngle = 120f;    // field of view
+    public float sightAngle = 120f;
+    public LayerMask sightLayerMask = ~0; // default everything
     public float attackRange = 1.6f;
-    public LayerMask sightLayerMask;   // walls + environment
-    public float timeToLoseInterest = 4f;
-    private float lostSightTimer = 0f;
+    public float timeToForgetPlayer = 4f;
+    private Vector3 lastKnownPlayerPosition;
+    private float lastSeenTime;
 
-    // Attack timing
+    // Movement speeds
+    [Header("Speeds")]
+    public float patrolSpeed = 2.2f;
+    public float chaseSpeed = 3.8f;
+
+    // Attack
     [Header("Attack")]
-    public float attackCooldown = 1.0f;
+    public float attackCooldown = 1f;
     private float lastAttackTime = -999f;
 
-    // Crowd behaviour
-    [Header("Crowd Separation")]
+    // Health
+    [Header("Health")]
+    public int maxHealth = 3;
+    private int currentHealth;
+
+    // Separation / crowd avoidance
+    [Header("Crowd")]
     public float separationRadius = 2.0f;
     public float separationStrength = 1.2f;
     public LayerMask enemyLayerMask;
 
-    // Prevent agents getting stuck together
-    [Header("Anti-Stuck Behaviour")]
+    // Anti-stuck retreat
+    [Header("Anti-Stuck")]
     public float minSeparationDistance = 0.8f;
     public float retreatDistance = 1.2f;
     public float stuckVelocityThreshold = 0.05f;
 
-    // Physics stun / knockback
-    [Header("Stun / Physics")]
+    // Stun / physics
+    [Header("Stun / Knockback")]
     public float stunDuration = 1.0f;
-    private float stunTimer = 0f;
     public float knockbackForce = 6f;
-    private bool isPhysicallyStunned = false;
-
-    // Movement speeds
-    [Header("Misc")]
-    public float chaseSpeed = 3.8f;
-    public float patrolSpeed = 2.2f;
+    private float stunTimer = 0f;
 
     void Awake()
     {
@@ -69,86 +76,88 @@ public class EnemyAI : MonoBehaviour
 
         // NavMesh controls movement by default
         rb.isKinematic = true;
+        currentHealth = maxHealth;
     }
 
     void Start()
     {
-        // Find player using tag
-        var playerObj = GameObject.FindWithTag("Player");
-        if (playerObj != null)
-            player = playerObj.transform;
+        var p = GameObject.FindWithTag("Player");
+        if (p != null) player = p.transform;
 
-        agent.speed = patrolSpeed;
-        agent.stoppingDistance = attackRange * 0.9f;
+        idleTimer = idleTime;
 
-        SetNextWanderTarget();
+        // if no patrol points, start wandering
+        if (patrolPoints == null || patrolPoints.Length == 0)
+            state = State.Wander;
+        else
+            state = State.Idle;
     }
 
     void Update()
     {
-        // Run behaviour based on current state
         switch (state)
         {
-            case State.Patrol:
-                UpdatePatrol();
-                break;
-            case State.Wander:
-                UpdateWander();
-                break;
-            case State.Chase:
-                UpdateChase();
-                break;
-            case State.Attack:
-                UpdateAttack();
-                break;
-            case State.Stunned:
-                UpdateStunned();
-                break;
+            case State.Idle: UpdateIdle(); break;
+            case State.Patrol: UpdatePatrol(); break;
+            case State.Wander: UpdateWander(); break;
+            case State.Chase: UpdateChase(); break;
+            case State.Attack: UpdateAttack(); break;
+            case State.Stunned: UpdateStunned(); break;
         }
 
-        // Fix agents that stop moving when too close
+        // resolve local deadlocks between agents
         ResolveAgentStuck();
 
-        // Try to spot the player unless stunned
+        // perception only when not stunned
         if (state != State.Stunned)
-        {
             TryDetectPlayer();
-        }
     }
 
-    #region STATE_UPDATES
+    // ----------------- STATES -----------------
+
+    void UpdateIdle()
+    {
+        agent.isStopped = true;
+        idleTimer -= Time.deltaTime;
+        if (idleTimer <= 0f)
+        {
+            agent.isStopped = false;
+            state = (patrolPoints != null && patrolPoints.Length > 0) ? State.Patrol : State.Wander;
+        }
+    }
 
     void UpdatePatrol()
     {
         agent.speed = patrolSpeed;
-
-        // Move between patrol points if they exist
-        if (patrolPoints != null && patrolPoints.Length > 0)
+        if (patrolPoints == null || patrolPoints.Length == 0)
         {
-            if (!agent.pathPending && agent.remainingDistance <= patrolPointTolerance)
-            {
-                currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
-                agent.SetDestination(patrolPoints[currentPatrolIndex].position);
-            }
-
-            ApplySeparation();
-        }
-        else
-        {
-            // No patrol points → switch to wandering
             state = State.Wander;
-            SetNextWanderTarget();
+            return;
         }
+
+        // go to current patrol point if we don't have a path
+        if (!agent.hasPath)
+            agent.SetDestination(patrolPoints[patrolIndex].position);
+
+        // reached point -> idle and go to next
+        if (!agent.pathPending && agent.remainingDistance <= 0.8f)
+        {
+            patrolIndex = (patrolIndex + 1) % patrolPoints.Length;
+            state = State.Idle;
+            idleTimer = idleTime;
+        }
+
+        ApplySeparation();
     }
 
     void UpdateWander()
     {
         agent.speed = patrolSpeed;
-
-        // Pick a new random destination when close enough
-        if (!agent.pathPending && agent.remainingDistance <= 0.9f)
+        if (!agent.hasPath || agent.remainingDistance < 1f)
         {
-            SetNextWanderTarget();
+            Vector3 rnd = Random.insideUnitSphere * wanderRadius + transform.position;
+            if (NavMesh.SamplePosition(rnd, out NavMeshHit hit, wanderRadius, NavMesh.AllAreas))
+                agent.SetDestination(hit.position);
         }
 
         ApplySeparation();
@@ -156,66 +165,40 @@ public class EnemyAI : MonoBehaviour
 
     void UpdateChase()
     {
-        if (player == null)
-        {
-            state = State.Wander;
-            return;
-        }
-
         agent.speed = chaseSpeed;
 
-        // Move toward player with separation offset
-        Vector3 dest = player.position;
-        Vector3 offset = ComputeSeparationOffset();
-        agent.SetDestination(dest + offset);
+        // pathfind to last known player position
+        agent.SetDestination(lastKnownPlayerPosition);
 
-        float dist = Vector3.Distance(transform.position, player.position);
-
-        // Close enough → attack
-        if (dist <= attackRange)
+        // if we have direct vision and are within attack range, attack
+        if (player != null && Vector3.Distance(transform.position, player.position) <= attackRange && IsPlayerVisible())
         {
             state = State.Attack;
             agent.isStopped = true;
             return;
         }
 
-        // Lose interest if player not visible for some time
-        if (!IsPlayerVisible())
+        // no recent sight -> give up and wander
+        if (Time.time - lastSeenTime > timeToForgetPlayer)
         {
-            lostSightTimer += Time.deltaTime;
-            if (lostSightTimer >= timeToLoseInterest)
-            {
-                lostSightTimer = 0f;
-                state = State.Wander;
-                agent.isStopped = false;
-                SetNextWanderTarget();
-            }
+            state = State.Wander;
+            agent.isStopped = false;
         }
-        else
-        {
-            lostSightTimer = 0f;
-        }
+
+        ApplySeparation();
     }
 
     void UpdateAttack()
     {
-        if (player == null)
-        {
-            state = State.Wander;
-            agent.isStopped = false;
-            return;
-        }
-
-        // Simple timed attack
+        // simple timed attack, deals damage if player has PlayerHealth
         if (Time.time - lastAttackTime >= attackCooldown)
         {
             lastAttackTime = Time.time;
             PerformAttack();
         }
 
-        // Too far → chase again
-        float dist = Vector3.Distance(transform.position, player.position);
-        if (dist > attackRange + 0.2f)
+        // if player moved away, resume chase
+        if (player == null || Vector3.Distance(transform.position, player.position) > attackRange + 0.5f)
         {
             agent.isStopped = false;
             state = State.Chase;
@@ -225,16 +208,10 @@ public class EnemyAI : MonoBehaviour
     void UpdateStunned()
     {
         stunTimer -= Time.deltaTime;
-
-        if (stunTimer <= 0f)
-        {
-            EndStun();
-        }
+        if (stunTimer <= 0f) EndStun();
     }
 
-    #endregion
-
-    #region PERCEPTION
+    // ----------------- PERCEPTION -----------------
 
     void TryDetectPlayer()
     {
@@ -243,22 +220,21 @@ public class EnemyAI : MonoBehaviour
         float dist = Vector3.Distance(transform.position, player.position);
         if (dist > sightRange) return;
 
-        // Check if player is inside field of view
+        // fov check
         Vector3 toPlayer = (player.position - transform.position).normalized;
-        float angle = Vector3.Angle(transform.forward, toPlayer);
+        if (Vector3.Angle(transform.forward, toPlayer) > sightAngle * 0.5f) return;
 
-        if (angle <= sightAngle * 0.5f)
+        // raycast to check occlusion
+        Vector3 eye = transform.position + Vector3.up * 0.9f;
+        Vector3 dir = (player.position - eye).normalized;
+        if (Physics.Raycast(eye, dir, out RaycastHit hit, sightRange, sightLayerMask))
         {
-            // Raycast to check if something blocks vision
-            Vector3 eye = transform.position + Vector3.up * 0.9f;
-            Vector3 dir = (player.position - eye).normalized;
-
-            if (Physics.Raycast(eye, dir, out RaycastHit hit, sightRange, sightLayerMask))
+            if (hit.transform == player || hit.collider.CompareTag("Player"))
             {
-                if (hit.transform == player || hit.collider.CompareTag("Player"))
-                {
-                    OnPlayerSpotted();
-                }
+                lastKnownPlayerPosition = player.position;
+                lastSeenTime = Time.time;
+                if (state != State.Chase && state != State.Attack)
+                    state = State.Chase;
             }
         }
     }
@@ -266,58 +242,89 @@ public class EnemyAI : MonoBehaviour
     bool IsPlayerVisible()
     {
         if (player == null) return false;
-
         float dist = Vector3.Distance(transform.position, player.position);
         if (dist > sightRange) return false;
 
         Vector3 eye = transform.position + Vector3.up * 0.9f;
         Vector3 dir = (player.position - eye).normalized;
-
         if (Physics.Raycast(eye, dir, out RaycastHit hit, sightRange, sightLayerMask))
-        {
             return hit.transform == player || hit.collider.CompareTag("Player");
-        }
-
         return false;
     }
 
-    void OnPlayerSpotted()
+    // called by player gun when firing (noise)
+    public void OnNoiseHeard(Vector3 noisePosition)
     {
-        if (state == State.Stunned) return;
-
-        state = State.Chase;
-        agent.isStopped = false;
-        lostSightTimer = 0f;
+        lastKnownPlayerPosition = noisePosition;
+        lastSeenTime = Time.time;
+        if (state != State.Stunned)
+            state = State.Chase;
     }
 
-    #endregion
-
-    #region ATTACK
+    // ----------------- ATTACK / DAMAGE -----------------
 
     void PerformAttack()
     {
-        // Placeholder attack logic
-        Debug.Log($"{name} attacks player at {Time.time}");
+        // try to damage player if they have PlayerCharacterController
+        if (player != null)
+        {
+            var pcc = player.GetComponent<PlayerCharacterController>();
+            if (pcc != null)
+            {
+                pcc.TakeDamage(1f); // deal 1 HP of damage
+            }
+            else
+            {
+                Debug.Log($"{name} would attack player (no PlayerCharacterController found).");
+            }
+        }
     }
 
-    #endregion
 
-    #region SEPARATION
+    // simple health on the enemy itself
+    public void TakeDamage(int amount)
+    {
+        currentHealth -= amount;
+        if (currentHealth <= 0)
+            Die();
+        else
+            OnDamageReaction();
+    }
 
-    // Calculates offset away from nearby enemies
+    void OnDamageReaction()
+    {
+        // small reaction: go to last known player position and chase
+        if (player != null)
+        {
+            lastKnownPlayerPosition = player.position;
+            lastSeenTime = Time.time;
+            state = State.Chase;
+        }
+    }
+
+    void Die()
+    {
+        // disable agent and collider, then deactivate
+        if (agent != null) agent.enabled = false;
+        var col = GetComponent<Collider>();
+        if (col != null) col.enabled = false;
+        // optional: spawn death FX here
+        gameObject.SetActive(false);
+    }
+
+    // ----------------- SEPARATION / ANTI-STUCK -----------------
+
+    // small offset away from nearby enemies so they don't bunch up
     Vector3 ComputeSeparationOffset()
     {
         Vector3 offset = Vector3.zero;
         Collider[] hits = Physics.OverlapSphere(transform.position, separationRadius, enemyLayerMask);
-
         int count = 0;
         foreach (var c in hits)
         {
-            if (c.gameObject == gameObject) continue;
-
+            if (c.gameObject == this.gameObject) continue;
             Vector3 away = transform.position - c.transform.position;
             float d = away.magnitude;
-
             if (d > 0.001f)
             {
                 offset += away.normalized / d;
@@ -330,90 +337,53 @@ public class EnemyAI : MonoBehaviour
             offset = (offset / count) * separationStrength;
             offset.y = 0f;
         }
-
         return offset;
     }
 
     void ApplySeparation()
     {
         if (agent.pathPending) return;
-
         if (agent.hasPath || agent.remainingDistance > 0.1f)
         {
-            Vector3 baseDestination = agent.destination;
+            Vector3 baseDest = agent.destination;
             Vector3 sep = ComputeSeparationOffset();
-            agent.SetDestination(baseDestination + sep);
+            agent.SetDestination(baseDest + sep);
         }
     }
 
-    // Forces agent to back away if stuck with others
+    // If agents are jammed (low velocity and close together) retreat a bit
     void ResolveAgentStuck()
     {
         if (!agent.enabled || !agent.hasPath) return;
         if (agent.velocity.magnitude >= stuckVelocityThreshold) return;
 
-        Collider[] nearby = Physics.OverlapSphere(
-            transform.position,
-            minSeparationDistance,
-            enemyLayerMask
-        );
-
+        Collider[] nearby = Physics.OverlapSphere(transform.position, minSeparationDistance, enemyLayerMask);
         if (nearby.Length <= 1) return;
 
         Vector3 retreatDir = Vector3.zero;
-
-        foreach (Collider c in nearby)
+        foreach (var c in nearby)
         {
             if (c.gameObject == gameObject) continue;
-
             Vector3 away = transform.position - c.transform.position;
             if (away.sqrMagnitude > 0.001f)
-            {
                 retreatDir += away.normalized;
-            }
         }
 
-        if (retreatDir == Vector3.zero) return;
+        if (retreatDir.sqrMagnitude < 0.0001f) return;
 
         retreatDir.Normalize();
         Vector3 retreatTarget = transform.position + retreatDir * retreatDistance;
-
         if (NavMesh.SamplePosition(retreatTarget, out NavMeshHit hit, retreatDistance, NavMesh.AllAreas))
-        {
             agent.SetDestination(hit.position);
-        }
     }
 
-    #endregion
+    // ----------------- STUN / KNOCKBACK -----------------
 
-    #region WANDER_HELPERS
-
-    void SetNextWanderTarget()
-    {
-        Vector3 randomDirection = Random.insideUnitSphere * wanderRadius;
-        randomDirection += transform.position;
-
-        if (NavMesh.SamplePosition(randomDirection, out NavMeshHit hit, wanderRadius, NavMesh.AllAreas))
-        {
-            wanderTarget = hit.position;
-            agent.SetDestination(wanderTarget);
-        }
-        else
-        {
-            agent.SetDestination(transform.position + transform.forward * 2f);
-        }
-    }
-
-    #endregion
-
-    #region STUN / PHYSICS
-
-    // Applies knockback and temporary stun
+    // externally callable: apply knockback/stun from explosion or bullet special effect
     public void ApplyKnockback(Vector3 sourcePosition, float force = -1f, float duration = -1f)
     {
         if (force <= 0f) force = knockbackForce;
         if (duration <= 0f) duration = stunDuration;
-
         StartCoroutine(DoStunRoutine(sourcePosition, force, duration));
     }
 
@@ -422,14 +392,13 @@ public class EnemyAI : MonoBehaviour
         state = State.Stunned;
         stunTimer = duration;
 
-        agent.enabled = false;
+        // disable nav control, enable physics
+        if (agent != null) agent.enabled = false;
         rb.isKinematic = false;
 
-        Vector3 direction = (transform.position - sourcePosition).normalized;
-        direction.y = 0.3f;
-
-        rb.AddForce(direction * force, ForceMode.Impulse);
-        isPhysicallyStunned = true;
+        Vector3 dir = (transform.position - sourcePosition).normalized;
+        dir.y = 0.3f;
+        rb.AddForce(dir * force, ForceMode.Impulse);
 
         while (stunTimer > 0f)
         {
@@ -442,24 +411,27 @@ public class EnemyAI : MonoBehaviour
 
     void EndStun()
     {
-        isPhysicallyStunned = false;
-
+        // stop physics, return control to agent
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
-
         rb.isKinematic = true;
-        agent.enabled = true;
+        if (agent != null) agent.enabled = true;
 
-        state = State.Wander;
-        SetNextWanderTarget();
+        state = State.Idle;
+        idleTimer = idleTime;
     }
 
-    #endregion
+    // ----------------- UTILITIES -----------------
 
-    // Debug helper
+    // external forcing (debug or leader logic)
     public void ForceChase(Transform target)
     {
         player = target;
-        OnPlayerSpotted();
+        if (player != null)
+        {
+            lastKnownPlayerPosition = player.position;
+            lastSeenTime = Time.time;
+            state = State.Chase;
+        }
     }
 }
