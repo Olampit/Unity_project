@@ -28,6 +28,7 @@ public class PlayerCharacterController : MonoBehaviour
 
     [SerializeField] private HealthBarController _healthBar;
 
+    // Start is called before the first frame update
     void Start()
     {
         characterController = GetComponent<CharacterController>();
@@ -35,10 +36,10 @@ public class PlayerCharacterController : MonoBehaviour
         // Cursor.visible = false;
 
         _currentHealth = _maxHealth;
-        if (_healthBar != null)
-            _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
+        _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
     }
 
+    // Update is called once per frame
     void Update()
     {
         #region Player Movement
@@ -50,6 +51,7 @@ public class PlayerCharacterController : MonoBehaviour
         float curSpeedY = canMove ? (isRunning ? runSpeed : walkSpeed) * Input.GetAxis("Horizontal") : 0;
         float movementDirectionY = moveDirection.y;
         moveDirection = (forward * curSpeedX) + (right * curSpeedY);
+        
         #endregion
 
         #region Player Jump
@@ -73,39 +75,34 @@ public class PlayerCharacterController : MonoBehaviour
         {
             rotationX += -Input.GetAxis("Mouse Y") * lookSpeed;
             rotationX = Mathf.Clamp(rotationX, -lookXLimit, lookXLimit);
-            if (playerCamera != null)
-                playerCamera.transform.localRotation = Quaternion.Euler(rotationX, 0, 0);
+            playerCamera.transform.localRotation = Quaternion.Euler(rotationX, 0, 0);
             transform.rotation *= Quaternion.Euler(0, Input.GetAxis("Mouse X") * lookSpeed, 0);
-        }
+        }   
+        
+
         #endregion
     }
 
     private void LateUpdate()
     {
-        // quick test damage on H
         if (Input.GetKeyDown(KeyCode.H))
         {
-            TakeDamage(Random.Range(0.5f, 1.5f));
+            TakeDamage();
         }
     }
 
-    // Public method enemies can call
-    public void TakeDamage(float amount)
+    private void TakeDamage()
     {
-        _currentHealth -= amount;
+        _currentHealth -= Random.Range(0.5f, 1.5f);
 
         if (_currentHealth <= 0)
         {
-            // player death 
             Destroy(gameObject);
         }
         else
-        {
-            if (_healthBar != null)
-                _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
-
-            if (_hitEffect != null)
-                Instantiate(_hitEffect, transform.position, Quaternion.identity);
+        {   
+            _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
+            Instantiate(_hitEffect, transform.position, Quaternion.identity);
         }
     }
 }
