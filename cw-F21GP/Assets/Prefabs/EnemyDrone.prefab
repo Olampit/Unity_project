@@ -97,7 +97,7 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 1.9812008
+  m_Radius: 3
   m_Height: 3.3034472
   m_Direction: 1
   m_Center: {x: -0.000000059604645, y: 0.1767767, z: 0.00000011920929}
@@ -162,17 +162,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 156b6cd930cfb274689a2cc729f61cf3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  idleTime: 2
   patrolPoints: []
   wanderRadius: 8
-  patrolPointTolerance: 1
-  sightRange: 12
+  sightRange: 10000
   sightAngle: 120
-  attackRange: 1.6
   sightLayerMask:
     serializedVersion: 2
-    m_Bits: 0
-  timeToLoseInterest: 4
+    m_Bits: 64
+  attackRange: 1.6
+  timeToForgetPlayer: 4
+  patrolSpeed: 2.2
+  chaseSpeed: 3.8
   attackCooldown: 1
+  maxHealth: 3
   separationRadius: 5
   separationStrength: 1.2
   enemyLayerMask:
@@ -183,5 +186,3 @@ MonoBehaviour:
   stuckVelocityThreshold: 0.05
   stunDuration: 1
   knockbackForce: 6
-  chaseSpeed: 3.8
-  patrolSpeed: 2.2
