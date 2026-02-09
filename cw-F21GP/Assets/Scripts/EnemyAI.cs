@@ -6,7 +6,7 @@ using UnityEngine.AI;
 [RequireComponent(typeof(Rigidbody))]
 public class EnemyAI : MonoBehaviour
 {
-    // Simple FSM
+    // FSM
     private enum State { Idle, Patrol, Wander, Chase, Attack, Stunned }
     private State state = State.Idle;
 
