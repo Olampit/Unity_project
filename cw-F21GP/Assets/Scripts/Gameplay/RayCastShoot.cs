@@ -45,11 +45,11 @@ public class RayCastShoot : MonoBehaviour
             if (Physics.Raycast (rayOrigin, fpsCam.transform.forward, out hit, weaponRange))
             {
                 laserLine.SetPosition (1, hit.point);
-                ShootableBox health = hit.collider.GetComponent<ShootableBox>();
+                EnemyAI health = hit.collider.GetComponent<EnemyAI>();
 
                 if (health != null)
                 {
-                    health.Damage (gunDamage);
+                    health.TakeDamage (gunDamage);
                 }
 
                 if (hit.rigidbody != null)
