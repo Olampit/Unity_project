@@ -45,11 +45,16 @@ public class RayCastShoot : MonoBehaviour
             if (Physics.Raycast (rayOrigin, fpsCam.transform.forward, out hit, weaponRange))
             {
                 laserLine.SetPosition (1, hit.point);
-                EnemyAI health = hit.collider.GetComponent<EnemyAI>();
-
-                if (health != null)
+                EnemyAI enemy = hit.collider.GetComponent<EnemyAI>();
+                if (enemy != null)
                 {
-                    health.TakeDamage (gunDamage);
+                    enemy.TakeDamage (gunDamage);
+                }
+
+                ArionDigital.CrashCrate crate = hit.collider.GetComponent<ArionDigital.CrashCrate>();
+                if (crate != null)
+                {
+                    crate.Break();
                 }
 
                 if (hit.rigidbody != null)
