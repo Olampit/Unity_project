@@ -31,7 +31,7 @@ public class EnemyAI : MonoBehaviour
     public float sightRange = 12f;
     public float sightAngle = 120f;
     public LayerMask sightLayerMask = ~0; // default everything
-    public float attackRange = 1.6f;
+    public float attackRange = 8f;
     public float timeToForgetPlayer = 4f;
     private Vector3 lastKnownPlayerPosition;
     private float lastSeenTime;
@@ -43,8 +43,13 @@ public class EnemyAI : MonoBehaviour
 
     // Attack
     [Header("Attack")]
-    public float attackCooldown = 1f;
+    public float attackCooldown = 3f;
+    public float attackDamage = 0.3f;
     private float lastAttackTime = -999f;
+    public Transform[] gunTips;
+    public LineRenderer[] laserLines;
+    public float shotDuration = 0.07f;
+    public AudioSource gunAudio;
 
     // Health
     [Header("Health")]
@@ -84,6 +89,16 @@ public class EnemyAI : MonoBehaviour
         var p = GameObject.FindWithTag("Player");
         if (p != null) player = p.transform;
 
+        if (p != null) player = p.transform;
+
+        // Auto-assign if empty (legacy backup)
+        if (laserLines == null || laserLines.Length == 0)
+        {
+            var lr = GetComponent<LineRenderer>();
+            if (lr != null) laserLines = new LineRenderer[] { lr };
+        }
+        if (gunAudio == null) gunAudio = GetComponent<AudioSource>();
+
         idleTimer = idleTime;
 
         // if no patrol points, start wandering
@@ -107,6 +122,10 @@ public class EnemyAI : MonoBehaviour
 
         // resolve local deadlocks between agents
         ResolveAgentStuck();
+
+        // ensure stopping distance matches attack range
+        if (agent.stoppingDistance != attackRange - 1.0f)
+            agent.stoppingDistance = Mathf.Max(attackRange - 1.0f, 0.5f);
 
         // perception only when not stunned
         if (state != State.Stunned)
@@ -190,6 +209,9 @@ public class EnemyAI : MonoBehaviour
 
     void UpdateAttack()
     {
+        // rotate towards player even while attacking
+        if (player != null) FaceTarget(player.position);
+
         // simple timed attack, deals damage if player has PlayerHealth
         if (Time.time - lastAttackTime >= attackCooldown)
         {
@@ -203,6 +225,22 @@ public class EnemyAI : MonoBehaviour
             agent.isStopped = false;
             state = State.Chase;
         }
+    }
+
+    void FaceTarget(Vector3 target)
+    {
+        Vector3 direction = (target - transform.position).normalized;
+        direction.y = 0; // maintain upright orientation
+        Quaternion lookRotation = Quaternion.LookRotation(direction);
+        transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, attackRange);
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, sightRange);
     }
 
     void UpdateStunned()
@@ -268,14 +306,92 @@ public class EnemyAI : MonoBehaviour
         // try to damage player if they have PlayerCharacterController
         if (player != null)
         {
-            var pcc = player.GetComponent<PlayerCharacterController>();
-            if (pcc != null)
+            StartCoroutine(ShotEffect());
+
+            // Use first gun tip for logic, or enemy center if none
+            Vector3 logicalOrigin = (gunTips != null && gunTips.Length > 0 && gunTips[0] != null) 
+                                    ? gunTips[0].position 
+                                    : transform.position + Vector3.up * 1.5f;
+
+            // Aim for chest/head instead of feet
+            Vector3 targetPoint = player.position + Vector3.up * -0.7f + transform.right * -0.3f; 
+            Vector3 direction = (targetPoint - logicalOrigin).normalized;
+
+            // 1. VISUALS: Set all lasers
+            if (laserLines != null && gunTips != null)
             {
-                pcc.TakeDamage(1f); // deal 1 HP of damage
+                for (int i = 0; i < laserLines.Length; i++)
+                {
+                    if (i >= gunTips.Length) break; // safety
+                    if (laserLines[i] == null || gunTips[i] == null) continue;
+
+                    laserLines[i].SetPosition(0, gunTips[i].position);
+                    
+                    // We can simply draw the line to where the logic raycast hits (or misses)
+                    // but relative to this gun tip's perspective, it might look slightly off if perfectly parallel.
+                    // For simplicity, we'll draw to the same 'hit point' or 'target direction'
+                }
             }
-            else
+
+            // 2. LOGIC: Single raycast for damage
+            float shootDist = 100f; 
+            Vector3 hitPoint = logicalOrigin + (direction * shootDist); // default miss pos
+
+            if (Physics.Raycast(logicalOrigin, direction, out RaycastHit hit, shootDist, sightLayerMask)) 
             {
-                Debug.Log($"{name} would attack player (no PlayerCharacterController found).");
+                hitPoint = hit.point;
+
+                // Check for player
+                var hitPCC = hit.collider.GetComponentInParent<PlayerCharacterController>();
+                
+                if (hit.transform == player || hit.collider.CompareTag("Player") || hitPCC != null)
+                {
+                    if (hitPCC == null && player != null) 
+                         hitPCC = player.GetComponent<PlayerCharacterController>();
+
+                    if (hitPCC != null)
+                    {
+                        hitPCC.TakeDamage(attackDamage);
+                    }
+                }
+                
+                // physics push
+                if (hit.rigidbody != null)
+                {
+                    hit.rigidbody.AddForce(-hit.normal * 100f); 
+                }
+            }
+            
+            // Update visual end positions to the hit point
+            if (laserLines != null)
+            {
+                foreach (var lr in laserLines)
+                {
+                    if (lr != null) lr.SetPosition(1, hitPoint);
+                }
+            }
+        }
+    }
+
+    private IEnumerator ShotEffect()
+    {
+        if (gunAudio != null) gunAudio.Play();
+
+        if (laserLines != null)
+        {
+            foreach (var lr in laserLines)
+            {
+                if (lr != null) lr.enabled = true;
+            }
+        }
+
+        yield return new WaitForSeconds(shotDuration);
+
+        if (laserLines != null)
+        {
+            foreach (var lr in laserLines)
+            {
+                if (lr != null) lr.enabled = false;
             }
         }
     }

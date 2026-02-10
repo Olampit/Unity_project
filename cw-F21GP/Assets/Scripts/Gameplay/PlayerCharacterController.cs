@@ -22,7 +22,7 @@ public class PlayerCharacterController : MonoBehaviour
     CharacterController characterController;
 
     [Header("Health")]
-    [SerializeField] private float _maxHealth = 3;
+    [SerializeField] private float _maxHealth = 100;
     private float _currentHealth;
     [SerializeField] private GameObject _hitEffect;
 
@@ -93,6 +93,9 @@ public class PlayerCharacterController : MonoBehaviour
     {
         _currentHealth -= amount;
 
+        if (_healthBar != null)
+            _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
+
         if (_currentHealth <= 0)
         {
             // player death 
@@ -100,9 +103,6 @@ public class PlayerCharacterController : MonoBehaviour
         }
         else
         {
-            if (_healthBar != null)
-                _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
-
             if (_hitEffect != null)
                 Instantiate(_hitEffect, transform.position, Quaternion.identity);
         }
