@@ -12,12 +12,17 @@
         [Header("Audio")]
         public AudioSource crashAudioClip;
 
-        private void OnTriggerEnter(Collider other)
+        public void Break()
         {
             wholeCrate.enabled = false;
             boxCollider.enabled = false;
             fracturedCrate.SetActive(true);
             crashAudioClip.Play();
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            Break();
         }
 
         [ContextMenu("Test")]
