@@ -1,6 +1,8 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
+using System;
+
 
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(Rigidbody))]
@@ -68,6 +70,10 @@ public class EnemyAI : MonoBehaviour
     public float stunDuration = 1.0f;
     public float knockbackForce = 6f;
     private float stunTimer = 0f;
+
+
+    public event Action OnEnemyDeath;
+
 
     void Awake()
     {
@@ -155,7 +161,7 @@ public class EnemyAI : MonoBehaviour
         agent.speed = patrolSpeed;
         if (!agent.hasPath || agent.remainingDistance < 1f)
         {
-            Vector3 rnd = Random.insideUnitSphere * wanderRadius + transform.position;
+            Vector3 rnd = UnityEngine.Random.insideUnitSphere * wanderRadius + transform.position;
             if (NavMesh.SamplePosition(rnd, out NavMeshHit hit, wanderRadius, NavMesh.AllAreas))
                 agent.SetDestination(hit.position);
         }
@@ -304,13 +310,15 @@ public class EnemyAI : MonoBehaviour
 
     void Die()
     {
-        // disable agent and collider, then deactivate
+        OnEnemyDeath?.Invoke();
+
         if (agent != null) agent.enabled = false;
-        var col = GetComponent<Collider>();
+        Collider col = GetComponent<Collider>();
         if (col != null) col.enabled = false;
-        // optional: spawn death FX here
+
         gameObject.SetActive(false);
     }
+
 
     // ----------------- SEPARATION / ANTI-STUCK -----------------
 
