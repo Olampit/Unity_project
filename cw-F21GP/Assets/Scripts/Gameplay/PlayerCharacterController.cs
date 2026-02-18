@@ -7,7 +7,7 @@ public class PlayerCharacterController : MonoBehaviour
 {
     public float walkSpeed = 6.0f;
     public float runSpeed = 12.0f;
-    public float jumpPower = 7.0f;
+    public float jumpPower = 4.0f;
     public float gravity = 10.0f;
 
     public float lookXLimit = 45.0f;
@@ -27,6 +27,7 @@ public class PlayerCharacterController : MonoBehaviour
     [SerializeField] private GameObject _hitEffect;
 
     [SerializeField] private HealthBarController _healthBar;
+    [SerializeField] private GameOverScreen _gameOverScreen;
 
     void Start()
     {
@@ -92,6 +93,7 @@ public class PlayerCharacterController : MonoBehaviour
     public void TakeDamage(float amount)
     {
         _currentHealth -= amount;
+        if (_currentHealth < 0) _currentHealth = 0;
 
         if (_healthBar != null)
             _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
@@ -99,7 +101,13 @@ public class PlayerCharacterController : MonoBehaviour
         if (_currentHealth <= 0)
         {
             // player death 
-            Destroy(gameObject);
+            // Destroy(gameObject); // Don't destroy immediately so camera stays or handle differently
+            if (_gameOverScreen != null)
+            {
+                _gameOverScreen.Setup();
+            }
+            // Optional: Disable player movement/controls here
+            canMove = false;
         }
         else
         {
