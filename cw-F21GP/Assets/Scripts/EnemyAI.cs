@@ -161,8 +161,12 @@ public class EnemyAI : MonoBehaviour
         }
 
         // go to current patrol point if we don't have a path
-        if (!agent.hasPath)
-            agent.SetDestination(patrolPoints[patrolIndex].position);
+        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
+            {
+                patrolIndex = (patrolIndex + 1) % patrolPoints.Length;
+                agent.SetDestination(patrolPoints[patrolIndex].position);
+            }
+
 
         // reached point -> idle and go to next
         if (!agent.pathPending && agent.remainingDistance <= 0.8f)
@@ -178,7 +182,7 @@ public class EnemyAI : MonoBehaviour
     void UpdateWander()
     {
         agent.speed = patrolSpeed;
-        if (!agent.hasPath || agent.remainingDistance < 1f)
+        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
         {
             Vector3 rnd = UnityEngine.Random.insideUnitSphere * wanderRadius + transform.position;
             if (NavMesh.SamplePosition(rnd, out NavMeshHit hit, wanderRadius, NavMesh.AllAreas))
