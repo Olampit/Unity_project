@@ -134,7 +134,9 @@ MonoBehaviour:
   chaseSpeed: 3.8
   attackCooldown: 3
   attackDamage: 0.3
-  gunTips: []
+  gunTips:
+  - {fileID: 0}
+  - {fileID: 0}
   laserLines: []
   shotDuration: 0.07
   gunAudio: {fileID: 0}

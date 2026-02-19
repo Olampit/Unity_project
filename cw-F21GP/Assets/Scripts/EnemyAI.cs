@@ -1,8 +1,7 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
-using System;
-
 
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(Rigidbody))]
@@ -74,28 +73,25 @@ public class EnemyAI : MonoBehaviour
     [Header("Stun / Knockback")]
     public float stunDuration = 1.0f;
     public float knockbackForce = 6f;
-
+    private Coroutine stunRoutine = null;
 
     public event Action OnEnemyDeath;
 
-
-        void Awake()
+    void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
         rb = GetComponent<Rigidbody>();
 
+        // Use NavMeshAgent for movement by default
         rb.isKinematic = true;
-        rb.useGravity = false;   // navmesh controls vertical normally
+        rb.useGravity = false;
 
         currentHealth = maxHealth;
     }
 
-
     void Start()
     {
         var p = GameObject.FindWithTag("Player");
-        if (p != null) player = p.transform;
-
         if (p != null) player = p.transform;
 
         // Auto-assign if empty (legacy backup)
@@ -124,14 +120,17 @@ public class EnemyAI : MonoBehaviour
             case State.Wander: UpdateWander(); break;
             case State.Chase: UpdateChase(); break;
             case State.Attack: UpdateAttack(); break;
+            case State.Stunned: /* no per-frame stun logic */ break;
         }
 
-        // resolve local deadlocks between agents
-        ResolveAgentStuck();
+        // resolve local deadlocks between agents (skip while stunned)
+        if (state != State.Stunned)
+            ResolveAgentStuck();
 
         // ensure stopping distance matches attack range
-        if (agent.stoppingDistance != attackRange - 1.0f)
-            agent.stoppingDistance = Mathf.Max(attackRange - 1.0f, 0.5f);
+        float desiredStop = Mathf.Max(attackRange - 1.0f, 0.5f);
+        if (!Mathf.Approximately(agent.stoppingDistance, desiredStop))
+            agent.stoppingDistance = desiredStop;
 
         // perception only when not stunned
         if (state != State.Stunned)
@@ -139,7 +138,6 @@ public class EnemyAI : MonoBehaviour
     }
 
     // ----------------- STATES -----------------
-
     void UpdateIdle()
     {
         agent.isStopped = true;
@@ -160,13 +158,12 @@ public class EnemyAI : MonoBehaviour
             return;
         }
 
-        // go to current patrol point if we don't have a path
+        // Request next patrol destination if we are at/close to current
         if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
-            {
-                patrolIndex = (patrolIndex + 1) % patrolPoints.Length;
-                agent.SetDestination(patrolPoints[patrolIndex].position);
-            }
-
+        {
+            patrolIndex = (patrolIndex + 1) % patrolPoints.Length;
+            agent.SetDestination(patrolPoints[patrolIndex].position);
+        }
 
         // reached point -> idle and go to next
         if (!agent.pathPending && agent.remainingDistance <= 0.8f)
@@ -222,7 +219,7 @@ public class EnemyAI : MonoBehaviour
         // rotate towards player even while attacking
         if (player != null) FaceTarget(player.position);
 
-        // simple timed attack, deals damage if player has PlayerHealth
+        // simple timed attack, deals damage if player has PlayerCharacterController
         if (Time.time - lastAttackTime >= attackCooldown)
         {
             lastAttackTime = Time.time;
@@ -254,7 +251,6 @@ public class EnemyAI : MonoBehaviour
     }
 
     // ----------------- PERCEPTION -----------------
-
     void TryDetectPlayer()
     {
         if (player == null) return;
@@ -294,7 +290,6 @@ public class EnemyAI : MonoBehaviour
         return false;
     }
 
-    // called by player gun when firing (noise)
     public void OnNoiseHeard(Vector3 noisePosition)
     {
         lastKnownPlayerPosition = noisePosition;
@@ -304,69 +299,54 @@ public class EnemyAI : MonoBehaviour
     }
 
     // ----------------- ATTACK / DAMAGE -----------------
-
     void PerformAttack()
     {
         // try to damage player if they have PlayerCharacterController
         if (player != null)
         {
             StartCoroutine(ShotEffect());
-
-            // Use first gun tip for logic, or enemy center if none
-            Vector3 logicalOrigin = (gunTips != null && gunTips.Length > 0 && gunTips[0] != null) 
-                                    ? gunTips[0].position 
+            Vector3 logicalOrigin = (gunTips != null && gunTips.Length > 0 && gunTips[0] != null)
+                                    ? gunTips[0].position
                                     : transform.position + Vector3.up * 1.5f;
 
-            // Aim for chest/head instead of feet
-            Vector3 targetPoint = player.position + Vector3.up * -0.7f + transform.right * -0.3f; 
+            Vector3 targetPoint = player.position + Vector3.up * -0.7f + transform.right * -0.3f;
             Vector3 direction = (targetPoint - logicalOrigin).normalized;
 
-            // 1. VISUALS: Set all lasers
             if (laserLines != null && gunTips != null)
             {
                 for (int i = 0; i < laserLines.Length; i++)
                 {
-                    if (i >= gunTips.Length) break; // safety
+                    if (i >= gunTips.Length) break;
                     if (laserLines[i] == null || gunTips[i] == null) continue;
-
                     laserLines[i].SetPosition(0, gunTips[i].position);
-                    
-                    // We can simply draw the line to where the logic raycast hits (or misses)
-                    // but relative to this gun tip's perspective, it might look slightly off if perfectly parallel.
-                    // For simplicity, we'll draw to the same 'hit point' or 'target direction'
                 }
             }
 
-            // 2. LOGIC: Single raycast for damage
-            float shootDist = 100f; 
-            Vector3 hitPoint = logicalOrigin + (direction * shootDist); // default miss pos
+            float shootDist = 100f;
+            Vector3 hitPoint = logicalOrigin + (direction * shootDist);
 
-            if (Physics.Raycast(logicalOrigin, direction, out RaycastHit hit, shootDist, sightLayerMask)) 
+            if (Physics.Raycast(logicalOrigin, direction, out RaycastHit hit, shootDist, sightLayerMask))
             {
                 hitPoint = hit.point;
-
-                // Check for player
                 var hitPCC = hit.collider.GetComponentInParent<PlayerCharacterController>();
-                
+
                 if (hit.transform == player || hit.collider.CompareTag("Player") || hitPCC != null)
                 {
-                    if (hitPCC == null && player != null) 
-                         hitPCC = player.GetComponent<PlayerCharacterController>();
+                    if (hitPCC == null && player != null)
+                        hitPCC = player.GetComponent<PlayerCharacterController>();
 
                     if (hitPCC != null)
                     {
                         hitPCC.TakeDamage(attackDamage);
                     }
                 }
-                
-                // physics push
+
                 if (hit.rigidbody != null)
                 {
-                    hit.rigidbody.AddForce(-hit.normal * 100f); 
+                    hit.rigidbody.AddForce(-hit.normal * 100f);
                 }
             }
-            
-            // Update visual end positions to the hit point
+
             if (laserLines != null)
             {
                 foreach (var lr in laserLines)
@@ -400,7 +380,6 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-
     // simple health on the enemy itself
     public void TakeDamage(int amount)
     {
@@ -413,7 +392,6 @@ public class EnemyAI : MonoBehaviour
 
     void OnDamageReaction()
     {
-        // small reaction: go to last known player position and chase
         if (player != null)
         {
             lastKnownPlayerPosition = player.position;
@@ -433,10 +411,7 @@ public class EnemyAI : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-
     // ----------------- SEPARATION / ANTI-STUCK -----------------
-
-    // small offset away from nearby enemies so they don't bunch up
     Vector3 ComputeSeparationOffset()
     {
         Vector3 offset = Vector3.zero;
@@ -464,6 +439,7 @@ public class EnemyAI : MonoBehaviour
 
     void ApplySeparation()
     {
+        if (state == State.Stunned) return; // skip while stunned
         if (agent.pathPending) return;
         if (agent.hasPath || agent.remainingDistance > 0.1f)
         {
@@ -473,9 +449,9 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    // If agents are jammed (low velocity and close together) retreat a bit
     void ResolveAgentStuck()
     {
+        if (state == State.Stunned) return; // skip while stunned
         if (!agent.enabled || !agent.hasPath) return;
         if (agent.velocity.magnitude >= stuckVelocityThreshold) return;
 
@@ -499,9 +475,7 @@ public class EnemyAI : MonoBehaviour
             agent.SetDestination(hit.position);
     }
 
-    // ----------------- STUN / KNOCKBACK -----------------
-
-    private Coroutine stunRoutine;
+    // ----------------- STUN / KNOCKBACK (FINAL SAFE VERSION) -----------------
 
     public void ApplyKnockback(Vector3 sourcePosition, float force = -1f, float duration = -1f)
     {
@@ -518,10 +492,13 @@ public class EnemyAI : MonoBehaviour
     {
         state = State.Stunned;
 
-        // Stop agent safely (DO NOT disable component)
+        // Pause NavMesh safely
         agent.isStopped = true;
         agent.updatePosition = false;
         agent.updateRotation = false;
+
+        // Slightly lift BEFORE enabling physics to avoid floor depenetration
+        transform.position += Vector3.up * 0.05f;
 
         // Enable physics
         rb.isKinematic = false;
@@ -529,40 +506,44 @@ public class EnemyAI : MonoBehaviour
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
 
-        // ---- HORIZONTAL BLAST ONLY ----
+        yield return null; // wait one frame so physics stabilizes
+
+        // Pure horizontal direction
         Vector3 dir = transform.position - sourcePosition;
-        dir.y = 0f;                  // no vertical launch
+        dir = Vector3.ProjectOnPlane(dir, Vector3.up);
+        if (dir.sqrMagnitude < 0.001f)
+            dir = transform.forward;
         dir.Normalize();
 
         rb.AddForce(dir * force, ForceMode.Impulse);
 
         float timer = 0f;
-
         while (timer < duration)
         {
             timer += Time.deltaTime;
             yield return null;
         }
 
-        // ---- STOP PHYSICS ----
+        // Stop physics
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
         rb.isKinematic = true;
+        rb.useGravity = false;
 
-        // ---- SNAP TO NAVMESH CLEANLY ----
-        if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+        // Snap to NavMesh under feet
+        Vector3 currentPos = transform.position;
+
+        if (NavMesh.SamplePosition(currentPos, out NavMeshHit hit, 2f, NavMesh.AllAreas))
         {
             agent.Warp(hit.position);
+            agent.nextPosition = hit.position; // critical sync
         }
-
-        agent.ResetPath();          // forget old pre-explosion path
-        agent.velocity = Vector3.zero;
 
         agent.updatePosition = true;
         agent.updateRotation = true;
         agent.isStopped = false;
 
-        // Resume behavior
+        // Resume movement properly
         if (patrolPoints != null && patrolPoints.Length > 0)
         {
             state = State.Patrol;
@@ -573,15 +554,11 @@ public class EnemyAI : MonoBehaviour
             state = State.Wander;
         }
 
-
-
         stunRoutine = null;
     }
 
 
     // ----------------- UTILITIES -----------------
-
-    // external forcing (debug or leader logic)
     public void ForceChase(Transform target)
     {
         player = target;
