@@ -74,21 +74,22 @@ public class EnemyAI : MonoBehaviour
     [Header("Stun / Knockback")]
     public float stunDuration = 1.0f;
     public float knockbackForce = 6f;
-    private float stunTimer = 0f;
 
 
     public event Action OnEnemyDeath;
 
 
-    void Awake()
+        void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
         rb = GetComponent<Rigidbody>();
 
-        // NavMesh controls movement by default
         rb.isKinematic = true;
+        rb.useGravity = false;   // navmesh controls vertical normally
+
         currentHealth = maxHealth;
     }
+
 
     void Start()
     {
@@ -123,7 +124,6 @@ public class EnemyAI : MonoBehaviour
             case State.Wander: UpdateWander(); break;
             case State.Chase: UpdateChase(); break;
             case State.Attack: UpdateAttack(); break;
-            case State.Stunned: UpdateStunned(); break;
         }
 
         // resolve local deadlocks between agents
@@ -251,12 +251,6 @@ public class EnemyAI : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, attackRange);
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, sightRange);
-    }
-
-    void UpdateStunned()
-    {
-        stunTimer -= Time.deltaTime;
-        if (stunTimer <= 0f) EndStun();
     }
 
     // ----------------- PERCEPTION -----------------
@@ -507,47 +501,83 @@ public class EnemyAI : MonoBehaviour
 
     // ----------------- STUN / KNOCKBACK -----------------
 
-    // externally callable: apply knockback/stun from explosion or bullet special effect
+    private Coroutine stunRoutine;
+
     public void ApplyKnockback(Vector3 sourcePosition, float force = -1f, float duration = -1f)
     {
         if (force <= 0f) force = knockbackForce;
         if (duration <= 0f) duration = stunDuration;
-        StartCoroutine(DoStunRoutine(sourcePosition, force, duration));
+
+        if (stunRoutine != null)
+            StopCoroutine(stunRoutine);
+
+        stunRoutine = StartCoroutine(StunRoutine(sourcePosition, force, duration));
     }
 
-    IEnumerator DoStunRoutine(Vector3 sourcePosition, float force, float duration)
+    IEnumerator StunRoutine(Vector3 sourcePosition, float force, float duration)
     {
         state = State.Stunned;
-        stunTimer = duration;
 
-        // disable nav control, enable physics
-        if (agent != null) agent.enabled = false;
+        // Stop agent safely (DO NOT disable component)
+        agent.isStopped = true;
+        agent.updatePosition = false;
+        agent.updateRotation = false;
+
+        // Enable physics
         rb.isKinematic = false;
+        rb.useGravity = true;
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
 
-        Vector3 dir = (transform.position - sourcePosition).normalized;
-        dir.y = 0.3f;
+        // ---- HORIZONTAL BLAST ONLY ----
+        Vector3 dir = transform.position - sourcePosition;
+        dir.y = 0f;                  // no vertical launch
+        dir.Normalize();
+
         rb.AddForce(dir * force, ForceMode.Impulse);
 
-        while (stunTimer > 0f)
+        float timer = 0f;
+
+        while (timer < duration)
         {
-            stunTimer -= Time.deltaTime;
+            timer += Time.deltaTime;
             yield return null;
         }
 
-        EndStun();
-    }
-
-    void EndStun()
-    {
-        // stop physics, return control to agent
+        // ---- STOP PHYSICS ----
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
         rb.isKinematic = true;
-        if (agent != null) agent.enabled = true;
 
-        state = State.Idle;
-        idleTimer = idleTime;
+        // ---- SNAP TO NAVMESH CLEANLY ----
+        if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+        {
+            agent.Warp(hit.position);
+        }
+
+        agent.ResetPath();          // forget old pre-explosion path
+        agent.velocity = Vector3.zero;
+
+        agent.updatePosition = true;
+        agent.updateRotation = true;
+        agent.isStopped = false;
+
+        // Resume behavior
+        if (patrolPoints != null && patrolPoints.Length > 0)
+        {
+            state = State.Patrol;
+            agent.SetDestination(patrolPoints[patrolIndex].position);
+        }
+        else
+        {
+            state = State.Wander;
+        }
+
+
+
+        stunRoutine = null;
     }
+
 
     // ----------------- UTILITIES -----------------
 

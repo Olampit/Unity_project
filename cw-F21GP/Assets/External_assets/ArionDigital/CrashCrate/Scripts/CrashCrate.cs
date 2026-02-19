@@ -17,7 +17,7 @@
         [Header("Explosion Settings")]
         public float explosionRadius = 6f;
         public float explosionForce = 15f;
-        public float upwardModifier = 1.5f;
+        public float upwardModifier = 0f;
         public LayerMask explosionLayers;
 
         private bool hasExploded = false;
