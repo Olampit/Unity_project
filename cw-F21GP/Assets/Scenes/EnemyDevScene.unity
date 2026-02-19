@@ -6386,6 +6386,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: EnemyDroneWithCorrectRoot
       objectReference: {fileID: 0}
+    - target: {fileID: 8577690019761899198, guid: ed5f26e155fff7044bfe8cf4f9bfe9bc, type: 3}
+      propertyPath: attackCooldown
+      value: 0.1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

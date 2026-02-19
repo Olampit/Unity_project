@@ -54,11 +54,11 @@ MonoBehaviour:
   fracturedCrate: {fileID: 1801761146947824276}
   crashAudioClip: {fileID: 4262418605540733613}
   explosionRadius: 25
-  explosionForce: 200
-  upwardModifier: 1.5
+  explosionForce: 20000
   explosionLayers:
     serializedVersion: 2
     m_Bits: 193
+  explosionEffect: {fileID: 0}
 --- !u!65 &1417637340330785042
 BoxCollider:
   m_ObjectHideFlags: 0
