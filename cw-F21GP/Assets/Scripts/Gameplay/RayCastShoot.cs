@@ -49,6 +49,7 @@ public class RayCastShoot : MonoBehaviour
                 if (enemy != null)
                 {
                     enemy.TakeDamage (gunDamage);
+                    enemy.OnNoiseHeard(gunEnd.position);
                 }
 
                 ArionDigital.CrashCrate crate = hit.collider.GetComponent<ArionDigital.CrashCrate>();

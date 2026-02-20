@@ -73,7 +73,7 @@ public class EnemyAI : MonoBehaviour
     // Stun / physics
     [Header("Stun / Knockback")]
     public float stunDuration = 1.0f;
-    public float knockbackForce = 6f;
+    public float knockbackForce = 600f;
 
 
     public event Action OnEnemyDeath;
@@ -113,6 +113,8 @@ public class EnemyAI : MonoBehaviour
             state = State.Wander;
         else
             state = State.Idle;
+
+        agent.stoppingDistance = 0.8f;
     }
 
     void Update()
@@ -129,13 +131,18 @@ public class EnemyAI : MonoBehaviour
         // resolve local deadlocks between agents
         ResolveAgentStuck();
 
-        // ensure stopping distance matches attack range
-        if (agent.stoppingDistance != attackRange - 1.0f)
-            agent.stoppingDistance = Mathf.Max(attackRange - 1.0f, 0.5f);
+        if (agent.remainingDistance == Mathf.Infinity)
+        {
+            agent.ResetPath();
+        }
 
+       
         // perception only when not stunned
         if (state != State.Stunned)
             TryDetectPlayer();
+            if (Time.frameCount % 10 == 0)
+        
+        Debug.Log($"{name} state={state} pos={transform.position:F2} dest={agent.destination:F2} remDist={agent.remainingDistance:F2} hasPath={agent.hasPath} pathPending={agent.pathPending}");
     }
 
     // ----------------- STATES -----------------
@@ -176,17 +183,26 @@ public class EnemyAI : MonoBehaviour
             idleTimer = idleTime;
         }
 
+        Debug.Log($"{name} next patrol index = {patrolIndex}");
+
         ApplySeparation();
     }
 
     void UpdateWander()
     {
         agent.speed = patrolSpeed;
-        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
+
+        if (agent.pathPending)
+            return;
+
+        if (!agent.hasPath || agent.remainingDistance <= agent.stoppingDistance + 0.2f)
         {
-            Vector3 rnd = UnityEngine.Random.insideUnitSphere * wanderRadius + transform.position;
+            Vector3 rnd = transform.position + UnityEngine.Random.insideUnitSphere * wanderRadius;
+
             if (NavMesh.SamplePosition(rnd, out NavMeshHit hit, wanderRadius, NavMesh.AllAreas))
+            {
                 agent.SetDestination(hit.position);
+            }
         }
 
         ApplySeparation();
@@ -257,30 +273,30 @@ public class EnemyAI : MonoBehaviour
 
     void TryDetectPlayer()
     {
-        if (player == null) return;
+        if (player == null || state == State.Stunned)
+            return;
 
-        float dist = Vector3.Distance(transform.position, player.position);
-        if (dist > sightRange) return;
-
-        // fov check
-        Vector3 toPlayer = (player.position - transform.position).normalized;
-        if (Vector3.Angle(transform.forward, toPlayer) > sightAngle * 0.5f) return;
-
-        // raycast to check occlusion
         Vector3 eye = transform.position + Vector3.up * 0.9f;
-        Vector3 dir = (player.position - eye).normalized;
-        if (Physics.Raycast(eye, dir, out RaycastHit hit, sightRange, sightLayerMask))
+        Vector3 toPlayer = player.position - eye;
+
+        if (toPlayer.magnitude > sightRange)
+            return;
+
+        if (Vector3.Angle(transform.forward, toPlayer) > sightAngle * 0.5f)
+            return;
+
+        if (Physics.Raycast(eye, toPlayer.normalized, out RaycastHit hit, sightRange, sightLayerMask, QueryTriggerInteraction.Ignore))
         {
             if (hit.transform == player || hit.collider.CompareTag("Player"))
             {
                 lastKnownPlayerPosition = player.position;
                 lastSeenTime = Time.time;
-                if (state != State.Chase && state != State.Attack)
-                    state = State.Chase;
+
+                state = State.Chase;
+                agent.isStopped = false;
             }
         }
     }
-
     bool IsPlayerVisible()
     {
         if (player == null) return false;
@@ -362,6 +378,7 @@ public class EnemyAI : MonoBehaviour
                 // physics push
                 if (hit.rigidbody != null)
                 {
+                    
                     hit.rigidbody.AddForce(-hit.normal * 100f); 
                 }
             }
@@ -464,12 +481,22 @@ public class EnemyAI : MonoBehaviour
 
     void ApplySeparation()
     {
+        if (state == State.Stunned) return;
         if (agent.pathPending) return;
-        if (agent.hasPath || agent.remainingDistance > 0.1f)
+        if (!agent.hasPath) return;
+
+        Vector3 sep = ComputeSeparationOffset();
+
+        // Only apply if meaningful
+        if (sep.sqrMagnitude < 0.3f * 0.3f)
+            return;
+
+        Vector3 newDest = agent.destination + sep;
+
+        // Only update if destination actually changed significantly
+        if (Vector3.Distance(newDest, agent.destination) > 0.5f)
         {
-            Vector3 baseDest = agent.destination;
-            Vector3 sep = ComputeSeparationOffset();
-            agent.SetDestination(baseDest + sep);
+            agent.SetDestination(newDest);
         }
     }
 
@@ -518,45 +545,46 @@ public class EnemyAI : MonoBehaviour
     {
         state = State.Stunned;
 
-        // Stop agent safely (DO NOT disable component)
+        // Stop agent safely
         agent.isStopped = true;
         agent.updatePosition = false;
         agent.updateRotation = false;
+        agent.ResetPath();   // CRITICAL: clear internal path memory
+
+        // Small lift to avoid ground depenetration pop
+        transform.position += Vector3.up * 0.05f;
 
         // Enable physics
         rb.isKinematic = false;
-        rb.useGravity = true;
+        rb.useGravity = false;   // we control Y manually
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
-        
+
         RigidbodyConstraints originalConstraints = rb.constraints;
-        rb.constraints = originalConstraints | RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotation;
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
 
         // ---- HORIZONTAL BLAST ONLY ----
         Vector3 dir = transform.position - sourcePosition;
-        dir.y = 0f;                  // no vertical launch
-        
+        dir.y = 0f;
+
         if (dir.sqrMagnitude > 0.001f)
             dir.Normalize();
         else
             dir = transform.forward;
 
-        rb.AddForce(dir * force, ForceMode.Impulse);
+        rb.AddForce(dir * force * rb.mass, ForceMode.Impulse);
 
         float timer = 0f;
 
         while (timer < duration)
         {
             timer += Time.deltaTime;
-            
-            // Explicitly kill any vertical velocity just in case
-            Vector3 vel = rb.velocity;
-            if (Mathf.Abs(vel.y) > 0.001f)
-            {
-                 vel.y = 0f;
-                 rb.velocity = vel;
-            }
-            
+
+            // HARD LOCK Y to prevent hovering
+            Vector3 pos = transform.position;
+            pos.y = 0f;   // since your navmesh ground is 0
+            transform.position = pos;
+
             yield return null;
         }
 
@@ -566,34 +594,29 @@ public class EnemyAI : MonoBehaviour
         rb.angularVelocity = Vector3.zero;
         rb.isKinematic = true;
 
-        // ---- SNAP BACK TO NAVMESH CORRECTLY ----
+        // ---- CRITICAL SYNC ORDER ----
 
-        // Capture current physics position
-        Vector3 currentPos = transform.position;
+        Vector3 finalPos = transform.position;
 
-        // Sample nearest valid NavMesh position
-        if (NavMesh.SamplePosition(currentPos, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+        // Snap to NavMesh
+        if (NavMesh.SamplePosition(finalPos, out NavMeshHit hit, 2f, NavMesh.AllAreas))
         {
-            // Warp agent (this updates internal position)
-            agent.Warp(hit.position);
-
-            // CRITICAL: force internal agent state to match transform
-            agent.nextPosition = hit.position;
-        }
-        else
-        {
-            // fallback: raycast down
-            if (Physics.Raycast(currentPos + Vector3.up * 1f, Vector3.down, out RaycastHit groundHit, 5f))
-            {
-                agent.Warp(groundHit.point);
-                agent.nextPosition = groundHit.point;
-            }
+            finalPos = hit.position;
         }
 
+        // 1️⃣ Move transform FIRST
+        transform.position = finalPos;
+
+        // 2️⃣ Sync agent internal position BEFORE enabling updatePosition
+        agent.nextPosition = finalPos;
+
+        // 3️⃣ Warp agent (keeps internal + transform consistent)
+        agent.Warp(finalPos);
+
+        // 4️⃣ Re-enable agent control
         agent.updatePosition = true;
         agent.updateRotation = true;
         agent.isStopped = false;
-
 
         // Resume behavior
         if (patrolPoints != null && patrolPoints.Length > 0)
@@ -605,8 +628,6 @@ public class EnemyAI : MonoBehaviour
         {
             state = State.Wander;
         }
-
-
 
         stunRoutine = null;
     }

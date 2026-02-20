@@ -123,29 +123,31 @@ MonoBehaviour:
   idleTime: 2
   patrolPoints: []
   wanderRadius: 8
-  sightRange: 12
+  sightRange: 50
   sightAngle: 120
   sightLayerMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 64
   attackRange: 8
   timeToForgetPlayer: 4
   patrolSpeed: 2.2
   chaseSpeed: 3.8
-  attackCooldown: 3
-  attackDamage: 0.3
+  attackCooldown: 1
+  attackDamage: 3
   gunTips:
-  - {fileID: 0}
-  - {fileID: 0}
-  laserLines: []
-  shotDuration: 0.07
+  - {fileID: 7696757518397521666, guid: 164710a7132b74dbba49a09b8776646d, type: 3}
+  - {fileID: 7715482778771449662, guid: 164710a7132b74dbba49a09b8776646d, type: 3}
+  laserLines:
+  - {fileID: 7960961390097987111, guid: 164710a7132b74dbba49a09b8776646d, type: 3}
+  - {fileID: 4954956187499803431, guid: 164710a7132b74dbba49a09b8776646d, type: 3}
+  shotDuration: 0.5
   gunAudio: {fileID: 0}
   maxHealth: 3
-  separationRadius: 2
+  separationRadius: 5
   separationStrength: 1.2
   enemyLayerMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 128
   minSeparationDistance: 0.8
   retreatDistance: 1.2
   stuckVelocityThreshold: 0.05
