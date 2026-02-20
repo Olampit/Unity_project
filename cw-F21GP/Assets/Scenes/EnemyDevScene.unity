@@ -1894,8 +1894,8 @@ MonoBehaviour:
   playerSpawnParent: {fileID: 749191892}
   enemyPrefab: {fileID: 5304678388378084072, guid: 164710a7132b74dbba49a09b8776646d, type: 3}
   enemySpawnParent: {fileID: 165351308}
-  enemySpawnDelay: 5
-  maxEnemies: 9
+  enemySpawnDelay: 1
+  maxEnemies: 30
   exitPoint: {fileID: 457352151}
 --- !u!4 &85256186
 Transform:

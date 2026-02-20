@@ -585,7 +585,7 @@ public class EnemyAI : MonoBehaviour
 
             // HARD LOCK Y to prevent hovering
             Vector3 pos = transform.position;
-            pos.y = 0f;   // since your navmesh ground is 0
+            pos.y = 1.9f;   
             transform.position = pos;
 
             yield return null;
