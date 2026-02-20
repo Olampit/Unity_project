@@ -36,8 +36,13 @@ public class LayoutSpawner : MonoBehaviour
         int index = Random.Range(0, playerSpawnParent.childCount);
         Transform spawn = playerSpawnParent.GetChild(index);
 
+        CharacterController cc = player.GetComponent<CharacterController>();
+        if (cc != null) cc.enabled = false;
+
         player.position = spawn.position;
         player.rotation = spawn.rotation;
+
+        if (cc != null) cc.enabled = true;
     }
 
     // ---------------- ENEMIES ----------------
