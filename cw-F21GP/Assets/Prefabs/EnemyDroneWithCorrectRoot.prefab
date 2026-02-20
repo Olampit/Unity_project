@@ -161,6 +161,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2850806587991840877}
     m_Modifications:
+    - target: {fileID: 4954956187499803431, guid: 164710a7132b74dbba49a09b8776646d, type: 3}
+      propertyPath: m_Positions.Array.data[1].x
+      value: 3.3364892
+      objectReference: {fileID: 0}
+    - target: {fileID: 4954956187499803431, guid: 164710a7132b74dbba49a09b8776646d, type: 3}
+      propertyPath: m_Positions.Array.data[1].y
+      value: 5.4292936
+      objectReference: {fileID: 0}
+    - target: {fileID: 4954956187499803431, guid: 164710a7132b74dbba49a09b8776646d, type: 3}
+      propertyPath: m_Positions.Array.data[1].z
+      value: -32.253925
+      objectReference: {fileID: 0}
     - target: {fileID: 5304678388377599688, guid: 164710a7132b74dbba49a09b8776646d, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -204,6 +216,18 @@ PrefabInstance:
     - target: {fileID: 5304678388378084072, guid: 164710a7132b74dbba49a09b8776646d, type: 3}
       propertyPath: m_Name
       value: DroneModel
+      objectReference: {fileID: 0}
+    - target: {fileID: 7960961390097987111, guid: 164710a7132b74dbba49a09b8776646d, type: 3}
+      propertyPath: m_Positions.Array.data[1].x
+      value: 3.3364892
+      objectReference: {fileID: 0}
+    - target: {fileID: 7960961390097987111, guid: 164710a7132b74dbba49a09b8776646d, type: 3}
+      propertyPath: m_Positions.Array.data[1].y
+      value: 5.4292936
+      objectReference: {fileID: 0}
+    - target: {fileID: 7960961390097987111, guid: 164710a7132b74dbba49a09b8776646d, type: 3}
+      propertyPath: m_Positions.Array.data[1].z
+      value: -32.253925
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 6176661124466070872, guid: 164710a7132b74dbba49a09b8776646d, type: 3}

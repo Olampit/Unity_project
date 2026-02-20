@@ -136,6 +136,8 @@ public class EnemyAI : MonoBehaviour
             agent.ResetPath();
         }
 
+        if (agent.stoppingDistance != attackRange - 1.0f)
+            agent.stoppingDistance = Mathf.Max(attackRange - 1.0f, 0.5f);
        
         // perception only when not stunned
         if (state != State.Stunned)
@@ -292,7 +294,8 @@ public class EnemyAI : MonoBehaviour
                 lastKnownPlayerPosition = player.position;
                 lastSeenTime = Time.time;
 
-                state = State.Chase;
+                if (state != State.Chase && state != State.Attack)
+                    state = State.Chase;
                 agent.isStopped = false;
             }
         }

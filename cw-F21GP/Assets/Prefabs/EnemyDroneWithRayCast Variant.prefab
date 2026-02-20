@@ -40,7 +40,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7314039022195295818}
-  m_Enabled: 0
+  m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -76,7 +76,7 @@ LineRenderer:
   m_SortingOrder: 0
   m_Positions:
   - {x: 1.28, y: -4.46, z: 1.92}
-  - {x: 3.3364892, y: 5.4292936, z: -32.253925}
+  - {x: 17.035664, y: 1.3000989, z: 2.5709732}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 0.05
@@ -185,7 +185,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7411569275350942602}
-  m_Enabled: 0
+  m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -221,7 +221,7 @@ LineRenderer:
   m_SortingOrder: 0
   m_Positions:
   - {x: -1.47, y: -4.46, z: 1.92}
-  - {x: 3.3364892, y: 5.4292936, z: -32.253925}
+  - {x: 17.035664, y: 1.3000989, z: 2.5709732}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 0.05
@@ -316,7 +316,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4638777421565361702, guid: df935da33795fe845bb2d4979881a098, type: 3}
       propertyPath: attackCooldown
-      value: 3
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4638777421565361702, guid: df935da33795fe845bb2d4979881a098, type: 3}
       propertyPath: gunTips.Array.size
