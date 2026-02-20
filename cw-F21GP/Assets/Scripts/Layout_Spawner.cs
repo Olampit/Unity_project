@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class LayoutSpawner : MonoBehaviour
 {
@@ -59,12 +60,24 @@ public class LayoutSpawner : MonoBehaviour
                 Random.Range(0, enemySpawnParent.childCount)
             );
 
-            GameObject enemy = Instantiate(
-                enemyPrefab,
-                spawn.position,
-                Quaternion.identity,
-                transform
-            );
+            Vector3 spawnPos = spawn.position;
+
+            if (NavMesh.SamplePosition(spawnPos, out NavMeshHit hit, 3f, NavMesh.AllAreas))
+            {
+                spawnPos = hit.position;
+            }
+            else
+            {
+                // fallback: raycast downward
+                if (Physics.Raycast(spawnPos + Vector3.up * 2f, Vector3.down, out RaycastHit groundHit, 10f))
+                {
+                    spawnPos = groundHit.point;
+                }
+            }
+
+            GameObject enemy = Instantiate(enemyPrefab, spawnPos, Quaternion.identity, transform);
+
+
 
             currentEnemyCount++;
             Debug.Log($"Enemies alive: {currentEnemyCount}/{maxEnemies}");

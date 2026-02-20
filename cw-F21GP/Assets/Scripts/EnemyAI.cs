@@ -73,22 +73,23 @@ public class EnemyAI : MonoBehaviour
     // Stun / physics
     [Header("Stun / Knockback")]
     public float stunDuration = 1.0f;
-    public float knockbackForce = 6f;
-    private float stunTimer = 0f;
+    public float knockbackForce = 600f;
 
 
     public event Action OnEnemyDeath;
 
 
-    void Awake()
+        void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
         rb = GetComponent<Rigidbody>();
 
-        // NavMesh controls movement by default
         rb.isKinematic = true;
+        rb.useGravity = false;   // navmesh controls vertical normally
+
         currentHealth = maxHealth;
     }
+
 
     void Start()
     {
@@ -112,6 +113,8 @@ public class EnemyAI : MonoBehaviour
             state = State.Wander;
         else
             state = State.Idle;
+
+        agent.stoppingDistance = 0.8f;
     }
 
     void Update()
@@ -123,19 +126,23 @@ public class EnemyAI : MonoBehaviour
             case State.Wander: UpdateWander(); break;
             case State.Chase: UpdateChase(); break;
             case State.Attack: UpdateAttack(); break;
-            case State.Stunned: UpdateStunned(); break;
         }
 
         // resolve local deadlocks between agents
         ResolveAgentStuck();
 
-        // ensure stopping distance matches attack range
-        if (agent.stoppingDistance != attackRange - 1.0f)
-            agent.stoppingDistance = Mathf.Max(attackRange - 1.0f, 0.5f);
+        if (agent.remainingDistance == Mathf.Infinity)
+        {
+            agent.ResetPath();
+        }
 
+       
         // perception only when not stunned
         if (state != State.Stunned)
             TryDetectPlayer();
+            if (Time.frameCount % 10 == 0)
+        
+        Debug.Log($"{name} state={state} pos={transform.position:F2} dest={agent.destination:F2} remDist={agent.remainingDistance:F2} hasPath={agent.hasPath} pathPending={agent.pathPending}");
     }
 
     // ----------------- STATES -----------------
@@ -161,8 +168,12 @@ public class EnemyAI : MonoBehaviour
         }
 
         // go to current patrol point if we don't have a path
-        if (!agent.hasPath)
-            agent.SetDestination(patrolPoints[patrolIndex].position);
+        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
+            {
+                patrolIndex = (patrolIndex + 1) % patrolPoints.Length;
+                agent.SetDestination(patrolPoints[patrolIndex].position);
+            }
+
 
         // reached point -> idle and go to next
         if (!agent.pathPending && agent.remainingDistance <= 0.8f)
@@ -172,17 +183,26 @@ public class EnemyAI : MonoBehaviour
             idleTimer = idleTime;
         }
 
+        Debug.Log($"{name} next patrol index = {patrolIndex}");
+
         ApplySeparation();
     }
 
     void UpdateWander()
     {
         agent.speed = patrolSpeed;
-        if (!agent.hasPath || agent.remainingDistance < 1f)
+
+        if (agent.pathPending)
+            return;
+
+        if (!agent.hasPath || agent.remainingDistance <= agent.stoppingDistance + 0.2f)
         {
-            Vector3 rnd = UnityEngine.Random.insideUnitSphere * wanderRadius + transform.position;
+            Vector3 rnd = transform.position + UnityEngine.Random.insideUnitSphere * wanderRadius;
+
             if (NavMesh.SamplePosition(rnd, out NavMeshHit hit, wanderRadius, NavMesh.AllAreas))
+            {
                 agent.SetDestination(hit.position);
+            }
         }
 
         ApplySeparation();
@@ -249,40 +269,34 @@ public class EnemyAI : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, sightRange);
     }
 
-    void UpdateStunned()
-    {
-        stunTimer -= Time.deltaTime;
-        if (stunTimer <= 0f) EndStun();
-    }
-
     // ----------------- PERCEPTION -----------------
 
     void TryDetectPlayer()
     {
-        if (player == null) return;
+        if (player == null || state == State.Stunned)
+            return;
 
-        float dist = Vector3.Distance(transform.position, player.position);
-        if (dist > sightRange) return;
-
-        // fov check
-        Vector3 toPlayer = (player.position - transform.position).normalized;
-        if (Vector3.Angle(transform.forward, toPlayer) > sightAngle * 0.5f) return;
-
-        // raycast to check occlusion
         Vector3 eye = transform.position + Vector3.up * 0.9f;
-        Vector3 dir = (player.position - eye).normalized;
-        if (Physics.Raycast(eye, dir, out RaycastHit hit, sightRange, sightLayerMask))
+        Vector3 toPlayer = player.position - eye;
+
+        if (toPlayer.magnitude > sightRange)
+            return;
+
+        if (Vector3.Angle(transform.forward, toPlayer) > sightAngle * 0.5f)
+            return;
+
+        if (Physics.Raycast(eye, toPlayer.normalized, out RaycastHit hit, sightRange, sightLayerMask, QueryTriggerInteraction.Ignore))
         {
             if (hit.transform == player || hit.collider.CompareTag("Player"))
             {
                 lastKnownPlayerPosition = player.position;
                 lastSeenTime = Time.time;
-                if (state != State.Chase && state != State.Attack)
-                    state = State.Chase;
+
+                state = State.Chase;
+                agent.isStopped = false;
             }
         }
     }
-
     bool IsPlayerVisible()
     {
         if (player == null) return false;
@@ -364,6 +378,7 @@ public class EnemyAI : MonoBehaviour
                 // physics push
                 if (hit.rigidbody != null)
                 {
+                    
                     hit.rigidbody.AddForce(-hit.normal * 100f); 
                 }
             }
@@ -466,12 +481,22 @@ public class EnemyAI : MonoBehaviour
 
     void ApplySeparation()
     {
+        if (state == State.Stunned) return;
         if (agent.pathPending) return;
-        if (agent.hasPath || agent.remainingDistance > 0.1f)
+        if (!agent.hasPath) return;
+
+        Vector3 sep = ComputeSeparationOffset();
+
+        // Only apply if meaningful
+        if (sep.sqrMagnitude < 0.3f * 0.3f)
+            return;
+
+        Vector3 newDest = agent.destination + sep;
+
+        // Only update if destination actually changed significantly
+        if (Vector3.Distance(newDest, agent.destination) > 0.5f)
         {
-            Vector3 baseDest = agent.destination;
-            Vector3 sep = ComputeSeparationOffset();
-            agent.SetDestination(baseDest + sep);
+            agent.SetDestination(newDest);
         }
     }
 
@@ -503,47 +528,110 @@ public class EnemyAI : MonoBehaviour
 
     // ----------------- STUN / KNOCKBACK -----------------
 
-    // externally callable: apply knockback/stun from explosion or bullet special effect
+    private Coroutine stunRoutine;
+
     public void ApplyKnockback(Vector3 sourcePosition, float force = -1f, float duration = -1f)
     {
         if (force <= 0f) force = knockbackForce;
         if (duration <= 0f) duration = stunDuration;
-        StartCoroutine(DoStunRoutine(sourcePosition, force, duration));
+
+        if (stunRoutine != null)
+            StopCoroutine(stunRoutine);
+
+        stunRoutine = StartCoroutine(StunRoutine(sourcePosition, force, duration));
     }
 
-    IEnumerator DoStunRoutine(Vector3 sourcePosition, float force, float duration)
+    IEnumerator StunRoutine(Vector3 sourcePosition, float force, float duration)
     {
         state = State.Stunned;
-        stunTimer = duration;
 
-        // disable nav control, enable physics
-        if (agent != null) agent.enabled = false;
+        // Stop agent safely
+        agent.isStopped = true;
+        agent.updatePosition = false;
+        agent.updateRotation = false;
+        agent.ResetPath();   // CRITICAL: clear internal path memory
+
+        // Small lift to avoid ground depenetration pop
+        transform.position += Vector3.up * 0.05f;
+
+        // Enable physics
         rb.isKinematic = false;
+        rb.useGravity = false;   // we control Y manually
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
 
-        Vector3 dir = (transform.position - sourcePosition).normalized;
-        dir.y = 0.3f;
-        rb.AddForce(dir * force, ForceMode.Impulse);
+        RigidbodyConstraints originalConstraints = rb.constraints;
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
 
-        while (stunTimer > 0f)
+        // ---- HORIZONTAL BLAST ONLY ----
+        Vector3 dir = transform.position - sourcePosition;
+        dir.y = 0f;
+
+        if (dir.sqrMagnitude > 0.001f)
+            dir.Normalize();
+        else
+            dir = transform.forward;
+
+        rb.AddForce(dir * force * rb.mass, ForceMode.Impulse);
+
+        float timer = 0f;
+
+        while (timer < duration)
         {
-            stunTimer -= Time.deltaTime;
+            timer += Time.deltaTime;
+
+            // HARD LOCK Y to prevent hovering
+            Vector3 pos = transform.position;
+            pos.y = 0f;   // since your navmesh ground is 0
+            transform.position = pos;
+
             yield return null;
         }
 
-        EndStun();
-    }
-
-    void EndStun()
-    {
-        // stop physics, return control to agent
+        // ---- STOP PHYSICS ----
+        rb.constraints = originalConstraints;
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
         rb.isKinematic = true;
-        if (agent != null) agent.enabled = true;
 
-        state = State.Idle;
-        idleTimer = idleTime;
+        // ---- CRITICAL SYNC ORDER ----
+
+        Vector3 finalPos = transform.position;
+
+        // Snap to NavMesh
+        if (NavMesh.SamplePosition(finalPos, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+        {
+            finalPos = hit.position;
+        }
+
+        // 1️⃣ Move transform FIRST
+        transform.position = finalPos;
+
+        // 2️⃣ Sync agent internal position BEFORE enabling updatePosition
+        agent.nextPosition = finalPos;
+
+        // 3️⃣ Warp agent (keeps internal + transform consistent)
+        agent.Warp(finalPos);
+
+        // 4️⃣ Re-enable agent control
+        agent.updatePosition = true;
+        agent.updateRotation = true;
+        agent.isStopped = false;
+
+        // Resume behavior
+        if (patrolPoints != null && patrolPoints.Length > 0)
+        {
+            state = State.Patrol;
+            agent.SetDestination(patrolPoints[patrolIndex].position);
+        }
+        else
+        {
+            state = State.Wander;
+        }
+
+        stunRoutine = null;
     }
+
 
     // ----------------- UTILITIES -----------------
 
