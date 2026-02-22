@@ -27,6 +27,7 @@ namespace F21GP.Enemy
 
         // Idle
         private float idleTimer;
+        private float yieldTimer; // Used for anti-stuck yielding
 
         // Patrol / wander
         [Header("Movement")]
@@ -96,17 +97,27 @@ namespace F21GP.Enemy
 
         void Update()
         {
-            switch (state)
+            if (yieldTimer > 0f && state != State.Stunned)
             {
-                case State.Idle: UpdateIdle(); break;
-                case State.Patrol: UpdatePatrol(); break;
-                case State.Wander: UpdateWander(); break;
-                case State.Chase: UpdateChase(); break;
-                case State.Attack: UpdateAttack(); break;
+                yieldTimer -= Time.deltaTime;
+                // Still allow perception and basic animation while yielding, but skip movement state updates
+                // resolve local deadlocks between agents
+                ResolveAgentStuck();
             }
+            else
+            {
+                switch (state)
+                {
+                    case State.Idle: UpdateIdle(); break;
+                    case State.Patrol: UpdatePatrol(); break;
+                    case State.Wander: UpdateWander(); break;
+                    case State.Chase: UpdateChase(); break;
+                    case State.Attack: UpdateAttack(); break;
+                }
 
-            // resolve local deadlocks between agents
-            ResolveAgentStuck();
+                // resolve local deadlocks between agents
+                ResolveAgentStuck();
+            }
 
                 if (agent.remainingDistance == Mathf.Infinity)
                 {
@@ -500,20 +511,31 @@ namespace F21GP.Enemy
             void ResolveAgentStuck()
             {
                 if (!agent.enabled || !agent.hasPath) return;
+                // Only reconsider yielding if we aren't currently deeply into a yield (allow slight chaining)
+                if (yieldTimer > 0.5f) return; 
+
                 if (_enemyStats != null && agent.velocity.magnitude >= _enemyStats.StuckVelocityThreshold) return;
 
                 float minSepDist = _enemyStats != null ? _enemyStats.MinSeparationDistance : 0.8f;
                 Collider[] nearby = Physics.OverlapSphere(transform.position, minSepDist, enemyLayerMask);
                 if (nearby.Length <= 1) return;
 
-            Vector3 retreatDir = Vector3.zero;
-            foreach (var c in nearby)
-            {
-                if (c.gameObject == gameObject) continue;
-                Vector3 away = transform.position - c.transform.position;
-                if (away.sqrMagnitude > 0.001f)
-                    retreatDir += away.normalized;
-            }
+                Vector3 retreatDir = Vector3.zero;
+                foreach (var c in nearby)
+                {
+                    if (c.gameObject == gameObject) continue;
+
+                    // ASYMMETRY: Only the drone with the HIGHER ID will yield and retreat.
+                    // This prevents both drones from endlessly reversing and pushing into each other.
+                    if (gameObject.GetInstanceID() < c.gameObject.GetInstanceID()) return;
+
+                    Vector3 away = transform.position - c.transform.position;
+                    // Emphasize moving backwards
+                    away += -transform.forward * 1.5f; 
+
+                    if (away.sqrMagnitude > 0.001f)
+                        retreatDir += away.normalized;
+                }
 
                 if (retreatDir.sqrMagnitude < 0.0001f) return;
 
@@ -521,7 +543,10 @@ namespace F21GP.Enemy
                 float retDist = _enemyStats != null ? _enemyStats.RetreatDistance : 1.2f;
                 Vector3 retreatTarget = transform.position + retreatDir * retDist;
                 if (NavMesh.SamplePosition(retreatTarget, out NavMeshHit hit, retDist, NavMesh.AllAreas))
+                {
                     agent.SetDestination(hit.position);
+                    yieldTimer = 1.0f; // Pause normal AI for 1 second to actually back up
+                }
             }
 
         #endregion
