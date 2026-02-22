@@ -171,7 +171,7 @@ Transform:
   m_GameObject: {fileID: 7411569275350942602}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.47, y: -0.45, z: 1.92}
+  m_LocalPosition: {x: -1.28, y: -0.45, z: 1.92}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -299,6 +299,14 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 4638777421565361702, guid: df935da33795fe845bb2d4979881a098, type: 3}
+      propertyPath: rb
+      value: 
+      objectReference: {fileID: 6768528996332521236}
+    - target: {fileID: 4638777421565361702, guid: df935da33795fe845bb2d4979881a098, type: 3}
+      propertyPath: agent
+      value: 
+      objectReference: {fileID: 7803045070240557774}
+    - target: {fileID: 4638777421565361702, guid: df935da33795fe845bb2d4979881a098, type: 3}
       propertyPath: gunTip
       value: 
       objectReference: {fileID: 7696757518397521666}
@@ -306,6 +314,10 @@ PrefabInstance:
       propertyPath: laserLine
       value: 
       objectReference: {fileID: 7960961390097987111}
+    - target: {fileID: 4638777421565361702, guid: df935da33795fe845bb2d4979881a098, type: 3}
+      propertyPath: _enemyStats
+      value: 
+      objectReference: {fileID: 11400000, guid: b27f3beec9b8b4df483f41ddbc960679, type: 2}
     - target: {fileID: 4638777421565361702, guid: df935da33795fe845bb2d4979881a098, type: 3}
       propertyPath: attackRange
       value: 8
@@ -390,6 +402,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: EnemyDroneWithRayCast Variant
       objectReference: {fileID: 0}
+    - target: {fileID: 8763490079064687024, guid: df935da33795fe845bb2d4979881a098, type: 3}
+      propertyPath: m_Speed
+      value: 2.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8763490079064687024, guid: df935da33795fe845bb2d4979881a098, type: 3}
+      propertyPath: m_Radius
+      value: 2
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -404,5 +424,15 @@ PrefabInstance:
 --- !u!4 &5304678388377599688 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6650082781591410102, guid: df935da33795fe845bb2d4979881a098, type: 3}
+  m_PrefabInstance: {fileID: 1573964011609959294}
+  m_PrefabAsset: {fileID: 0}
+--- !u!54 &6768528996332521236 stripped
+Rigidbody:
+  m_CorrespondingSourceObject: {fileID: 5204316941003943018, guid: df935da33795fe845bb2d4979881a098, type: 3}
+  m_PrefabInstance: {fileID: 1573964011609959294}
+  m_PrefabAsset: {fileID: 0}
+--- !u!195 &7803045070240557774 stripped
+NavMeshAgent:
+  m_CorrespondingSourceObject: {fileID: 8763490079064687024, guid: df935da33795fe845bb2d4979881a098, type: 3}
   m_PrefabInstance: {fileID: 1573964011609959294}
   m_PrefabAsset: {fileID: 0}
