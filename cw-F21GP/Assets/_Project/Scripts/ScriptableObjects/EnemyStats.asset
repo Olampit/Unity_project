@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de9ece07d8b134c898e83ab86e51aaf6, type: 3}
+  m_Name: EnemyStats
+  m_EditorClassIdentifier: 
+  MaxHealth: 3
+  PatrolSpeed: 2.2
+  ChaseSpeed: 3.8
+  WanderRadius: 8
+  SightRange: 10000
+  SightAngle: 120
+  AttackRange: 8
+  TimeToForgetPlayer: 4
+  AttackCooldown: 1
+  AttackDamage: 3
+  IdleTime: 2
+  SeparationRadius: 5
+  SeparationStrength: 1.2
+  MinSeparationDistance: 0.8
+  RetreatDistance: 1.2
+  StuckVelocityThreshold: 0.05
+  StunDuration: 1
+  KnockbackForce: 6
