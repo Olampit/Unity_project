@@ -1,4 +1,4 @@
-
+// reference: https://docs.unity3d.com/Manual/class-ScriptableObject.html
 using UnityEngine;
 
 namespace F21GP.Player
@@ -13,8 +13,8 @@ namespace F21GP.Player
         public float Gravity = 10.0f;
 
         [Header("Look")]
-        public float LookXLimit = 45.0f;
-        public float LookSpeed = 2.0f;
+        public float LookXLimit = 45.0f; // how far the player can look up and down
+        public float LookSpeed = 2.0f; // how fast the player can look
 
         [Header("Health")]
         public float MaxHealth = 100f;

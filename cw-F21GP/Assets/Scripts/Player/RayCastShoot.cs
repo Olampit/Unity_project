@@ -34,7 +34,7 @@ namespace F21GP.Player
             {
                 _nextFire = Time.time + _fireRate;
 
-                StartCoroutine(ShotEffect());
+                StartCoroutine(ShotEffect()); // coroutine is used to create a laser effect (or shot effect)
 
                 Vector3 rayOrigin = _fpsCam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 0.0f));
 
@@ -46,6 +46,7 @@ namespace F21GP.Player
                 {
                     _laserLine.SetPosition(1, hit.point);
                     
+                    // check if the hit object is an enemy
                     EnemyAI enemy = hit.collider.GetComponent<EnemyAI>();
                     if (enemy != null)
                     {
@@ -53,12 +54,14 @@ namespace F21GP.Player
                         enemy.OnNoiseHeard(_gunEnd.position);
                     }
 
-                    ArionDigital.CrashCrate crate = hit.collider.GetComponent<ArionDigital.CrashCrate>();
+                    // check if the hit object is a crash crate
+                    Interactions.CrashCrate crate = hit.collider.GetComponent<Interactions.CrashCrate>();
                     if (crate != null)
                     {
                         crate.Break();
                     }
 
+                    // check if the hit object has a rigidbody
                     if (hit.rigidbody != null)
                     {
                         hit.rigidbody.AddForce(-hit.normal * _hitForce);
@@ -71,7 +74,7 @@ namespace F21GP.Player
             }
         }
 
-        private IEnumerator ShotEffect()
+        private IEnumerator ShotEffect() // would be called when the player shoots the gun from coroutine
         {
             _gunAudio.Play();
 

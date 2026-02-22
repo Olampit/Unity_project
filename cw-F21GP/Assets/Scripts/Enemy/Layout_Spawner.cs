@@ -28,7 +28,7 @@ namespace F21GP.Enemy
             Debug.Log("LayoutSpawner active on: " + name);
         }
 
-        // ---------------- PLAYER ----------------
+        // spawn player randomly
 
         void SpawnPlayerRandomly()
         {
@@ -46,7 +46,7 @@ namespace F21GP.Enemy
             if (cc != null) cc.enabled = true;
         }
 
-        // ---------------- ENEMIES ----------------
+        // spawn enemies over time
 
         IEnumerator SpawnEnemiesOverTime()
         {
@@ -58,7 +58,7 @@ namespace F21GP.Enemy
                 // Wait first
                 yield return new WaitForSeconds(enemySpawnDelay);
 
-                // Hard guard: do nothing if at cap
+                // Hard guard: do nothing if at capacity
                 if (currentEnemyCount >= maxEnemies)
                     continue;
 
@@ -101,7 +101,7 @@ namespace F21GP.Enemy
             currentEnemyCount = Mathf.Max(0, currentEnemyCount - 1);
         }
 
-        // ---------------- EXIT ----------------
+        // get exit position
 
         public Vector3 GetExitPosition()
         {

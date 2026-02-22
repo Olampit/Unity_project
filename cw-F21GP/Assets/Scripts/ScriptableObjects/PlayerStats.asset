@@ -18,4 +18,4 @@ MonoBehaviour:
   Gravity: 10
   LookXLimit: 45
   LookSpeed: 2
-  MaxHealth: 100000
+  MaxHealth: 100

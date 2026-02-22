@@ -30,14 +30,14 @@ namespace F21GP.Player
             if (_characterController == null)
                 _characterController = GetComponent<CharacterController>();
 
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked; // lock the cursor to the center of the screen
+            Cursor.visible = false; // hide the cursor
 
             if (_playerStats != null)
             {
                 _currentHealth = _playerStats.MaxHealth;
                 if (_healthBar != null)
-                    _healthBar.UpdateHealthBar(_currentHealth, _playerStats.MaxHealth);
+                    _healthBar.UpdateHealthBar(_currentHealth, _playerStats.MaxHealth); // update the health bar initially
             }
         }
 
@@ -47,15 +47,15 @@ namespace F21GP.Player
             {
                 if (_pauseMenu != null)
                 {
-                    _pauseMenu.TogglePause();
+                    _pauseMenu.TogglePause(); // toggle the pause menu
                 }
             }
 
-            if (_pauseMenu != null && _pauseMenu.IsPaused) return;
+            if (_pauseMenu != null && _pauseMenu.IsPaused) return; // because we don't want to move the player when the pause menu is open
 
-            CalculateMovement();
-            CalculateJump();
-            CalculateRotation();
+            CalculateMovement(); // calculate the movement of the player
+            CalculateJump(); // calculate the jump of the player
+            CalculateRotation(); // calculate the rotation of the player
         }
 
         private void CalculateMovement()

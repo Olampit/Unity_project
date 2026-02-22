@@ -1,6 +1,6 @@
 ﻿// CrashCrate.cs
-// upgraded to apply horizontal-only explosion and call Enemy knockback
-namespace ArionDigital
+// this will apply horizontal-only explosion and call Enemy knockback
+namespace F21GP.Interactions
 {
     using UnityEngine;
     using F21GP.Enemy;
@@ -51,7 +51,7 @@ namespace ArionDigital
                     rb.AddExplosionForce(explosionForce, explosionPos, explosionRadius, 0f, ForceMode.Impulse);
                 }
 
-                // If it's an enemy, call its knockback API. We use a horizontal-only direction inside EnemyAI,
+                // If it's an enemy, call its knockback. We use a horizontal-only direction inside EnemyAI,
                 // but we still pass a force which can be scaled by distance below if desired.
                 EnemyAI ai = col.GetComponent<EnemyAI>();
                 if (ai == null && col.attachedRigidbody != null)
@@ -74,13 +74,7 @@ namespace ArionDigital
 
         private void OnTriggerEnter(Collider other)
         {
-            // Example: if bullet or player hits crate, break it.
-            Break();
-        }
-
-        [ContextMenu("Test Explosion")]
-        public void Test()
-        {
+            // if either bullet or player hits the crate, break it
             Break();
         }
     }

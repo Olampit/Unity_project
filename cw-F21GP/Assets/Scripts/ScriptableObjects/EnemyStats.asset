@@ -15,8 +15,8 @@ MonoBehaviour:
   MaxHealth: 3
   PatrolSpeed: 2.2
   ChaseSpeed: 3.8
-  WanderRadius: 8
-  SightRange: 10000
+  WanderRadius: 50
+  SightRange: 100
   SightAngle: 120
   AttackRange: 8
   TimeToForgetPlayer: 4
