@@ -30962,7 +30962,7 @@ PrefabInstance:
       objectReference: {fileID: 1533724147}
     - target: {fileID: 3895286578693457757, guid: 9238825a106514b5f9236973eb2adc60, type: 3}
       propertyPath: _gunDamage
-      value: 3
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3895286578693457757, guid: 9238825a106514b5f9236973eb2adc60, type: 3}
       propertyPath: _laserLine
