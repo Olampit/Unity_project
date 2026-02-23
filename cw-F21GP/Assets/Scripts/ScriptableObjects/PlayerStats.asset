@@ -19,3 +19,4 @@ MonoBehaviour:
   LookXLimit: 45
   LookSpeed: 2
   MaxHealth: 100
+  CanDropCrashCrate: 1

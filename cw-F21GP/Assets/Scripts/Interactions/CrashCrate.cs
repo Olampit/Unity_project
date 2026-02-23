@@ -22,6 +22,7 @@ namespace F21GP.Interactions
         public float explosionForce = 15f;
         public LayerMask explosionLayers = ~0; // set in inspector (include Enemy layer)
         public GameObject explosionEffect; // optional VFX prefab
+        public float destroyDelay = 3f; // seconds before destroying object after explosion
 
         private bool hasExploded = false;
 
@@ -68,8 +69,15 @@ namespace F21GP.Interactions
 
                     // call knockback - EnemyAI will ensure knockback is horizontal and enables gravity
                     ai.ApplyKnockback(explosionPos, scaledForce, -1f);
+                    
+                    // Deal damage and alert the enemy
+                    ai.TakeDamage(1);
+                    ai.OnNoiseHeard(explosionPos);
                 }
             }
+
+            // Destroy the object after some time
+            Destroy(gameObject, destroyDelay);
         }
 
         private void OnTriggerEnter(Collider other)

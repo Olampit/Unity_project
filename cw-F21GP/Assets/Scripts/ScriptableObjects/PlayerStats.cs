@@ -18,5 +18,8 @@ namespace F21GP.Player
 
         [Header("Health")]
         public float MaxHealth = 100f;
+
+        [Header("Abilities")]
+        public bool CanDropCrashCrate = true;
     }
 }
