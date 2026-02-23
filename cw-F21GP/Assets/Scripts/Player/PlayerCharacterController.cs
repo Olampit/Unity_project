@@ -1,5 +1,6 @@
 using UnityEngine;
 using F21GP.UI;
+using F21GP.Enemy;
 
 namespace F21GP.Player
 {
@@ -18,6 +19,9 @@ namespace F21GP.Player
         [SerializeField] private HealthBarController _healthBar;
         [SerializeField] private GameOverScreen _gameOverScreen;
         [SerializeField] private PauseMenu _pauseMenu;
+
+        [Header("Abilities")]
+        [SerializeField] private GameObject _crashCratePrefab;
 
         private Vector3 _moveDirection = Vector3.zero;
         public bool CanMove = true;
@@ -52,6 +56,11 @@ namespace F21GP.Player
             }
 
             if (_pauseMenu != null && _pauseMenu.IsPaused) return; // because we don't want to move the player when the pause menu is open
+
+            if (Input.GetKeyDown(KeyCode.C) && _playerStats != null && _playerStats.CanDropCrashCrate)
+            {
+                DropCrashCrate();
+            }
 
             CalculateMovement(); // calculate the movement of the player
             CalculateJump(); // calculate the jump of the player
@@ -109,6 +118,27 @@ namespace F21GP.Player
             if (Input.GetKeyDown(KeyCode.H))
             {
                 TakeDamage(Random.Range(0.5f, 1.5f));
+            }
+        }
+
+        private void DropCrashCrate()
+        {
+            if (_crashCratePrefab != null)
+            {
+                // Instantiate crate slightly in front and above the player
+                Vector3 dropPosition = transform.position + transform.forward * 1.5f + Vector3.up * 0.7f - transform.right * 0.5f;
+                GameObject crate = Instantiate(_crashCratePrefab, dropPosition, transform.rotation);
+
+                // If the player adds a Rigidbody to the crate prefab, throw it forward
+                Rigidbody rb = crate.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    // Calculate a throw direction: mostly forward, slightly up
+                    Vector3 throwDirection = transform.forward + (Vector3.up * 0.3f);
+                    float throwForce = 15f; 
+                    
+                    rb.AddForce(throwDirection.normalized * throwForce, ForceMode.Impulse);
+                }
             }
         }
 

@@ -49,7 +49,7 @@ namespace F21GP.Enemy
         public AudioSource gunAudio;
 
         // Health
-        private int currentHealth;
+        private float currentHealth;
 
         // Separation / crowd avoidance
         [Header("Crowd")]
@@ -422,7 +422,7 @@ namespace F21GP.Enemy
 
 
         // simple health on the enemy itself
-        public void TakeDamage(int amount)
+        public void TakeDamage(float amount)
         {
             currentHealth -= amount;
             if (currentHealth <= 0)

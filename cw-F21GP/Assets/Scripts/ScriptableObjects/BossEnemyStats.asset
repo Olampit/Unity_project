@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: de9ece07d8b134c898e83ab86e51aaf6, type: 3}
-  m_Name: EnemyStats
+  m_Name: BossEnemyStats
   m_EditorClassIdentifier: 
   MaxHealth: 3
   PatrolSpeed: 2.2
   ChaseSpeed: 3.8
   WanderRadius: 50
-  SightRange: 1000
+  SightRange: 100
   SightAngle: 120
   AttackRange: 8
   TimeToForgetPlayer: 4
