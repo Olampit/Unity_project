@@ -1,8 +1,11 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.UI;
+using TMPro;
+using F21GP.Enemy;
 
-namespace F21GP.Enemy
+namespace F21GP.Core
 {
     public class LayoutSpawner : MonoBehaviour
     {
@@ -18,14 +21,83 @@ namespace F21GP.Enemy
 
         private int currentEnemyCount = 0;
 
-        [Header("Exit")]
-        public Transform exitPoint;
+        [Header("Kill Tracking")]
+        [SerializeField] private int requiredKills = 30;
+        private int totalKillsTracker = 0;
+
+        [Header("Exit Portal")]
+        public GameObject exitPortal;
+
+        [Header("UI")]
+        [SerializeField] private TextMeshProUGUI timerText;
+        [SerializeField] private TextMeshProUGUI killCountText;
+        [SerializeField] private TextMeshProUGUI objectiveMessageText;
+
+        // Level timer
+        private float levelTimer = 0f;
+        private bool timerRunning = true;
 
         void Start()
         {
             SpawnPlayerRandomly();
             StartCoroutine(SpawnEnemiesOverTime());
             Debug.Log("LayoutSpawner active on: " + name);
+
+            // Ensure portal starts deactivated
+            if (exitPortal != null)
+                exitPortal.SetActive(false);
+
+            UpdateObjectiveMessage();
+
+            UpdateKillCountUI();
+        }
+
+        void Update()
+        {
+            // Tick the level timer
+            if (timerRunning)
+            {
+                levelTimer += Time.deltaTime;
+                UpdateTimerUI();
+                UpdateObjectiveMessage();
+            }
+        }
+
+        void UpdateTimerUI()
+        {
+            if (timerText != null)
+            {
+                int minutes = Mathf.FloorToInt(levelTimer / 60f);
+                int seconds = Mathf.FloorToInt(levelTimer % 60f);
+                timerText.text = $"{minutes:00}:{seconds:00}";
+            }
+        }
+
+        void UpdateKillCountUI()
+        {
+            if (killCountText != null)
+                killCountText.text = $"Kills: {totalKillsTracker} / {requiredKills}";
+        }
+
+        void UpdateObjectiveMessage()
+        {
+            if (objectiveMessageText == null) return;
+
+            // Show for the first 5 seconds of the level, then permanently hide
+            if (levelTimer < 5f)
+            {
+                objectiveMessageText.gameObject.SetActive(true);
+                objectiveMessageText.text = $"Level 1\nObjective: Kill {requiredKills} enemies to open the extraction portal.";
+            }
+            else if (totalKillsTracker >= requiredKills)
+            {
+                objectiveMessageText.gameObject.SetActive(true);
+                objectiveMessageText.text = $"Extraction portal is now open!\nObjective: Find it and escape!";
+            }
+            else
+            {
+                objectiveMessageText.gameObject.SetActive(false);
+            }
         }
 
         // spawn player randomly
@@ -83,11 +155,8 @@ namespace F21GP.Enemy
 
                 GameObject enemy = Instantiate(enemyPrefab, spawnPos, Quaternion.identity, transform);
 
-
-
                 currentEnemyCount++;
                 Debug.Log($"Enemies alive: {currentEnemyCount}/{maxEnemies}");
-
 
                 EnemyAI ai = enemy.GetComponent<EnemyAI>();
                 if (ai != null)
@@ -99,13 +168,40 @@ namespace F21GP.Enemy
         void HandleEnemyDeath()
         {
             currentEnemyCount = Mathf.Max(0, currentEnemyCount - 1);
+            totalKillsTracker++;
+            UpdateKillCountUI();
+            Debug.Log($"Total kills: {totalKillsTracker}/{requiredKills}");
+
+            if (totalKillsTracker >= requiredKills)
+            {
+                ActivateExitPortal();
+            }
+        }
+
+        public void StopTimer()
+        {
+            timerRunning = false;
+        }
+
+        void ActivateExitPortal()
+        {
+            // Activate the portal object
+            if (exitPortal != null)
+            {
+                exitPortal.SetActive(true);
+                Debug.Log("Exit Portal Activated!");
+            }
         }
 
         // get exit position
 
         public Vector3 GetExitPosition()
         {
-            return exitPoint != null ? exitPoint.position : Vector3.zero;
+            return exitPortal != null ? exitPortal.transform.position : Vector3.zero;
         }
+
+        // Public getter for the final level time
+        public float GetLevelTime() => levelTimer;
     }
 }
+

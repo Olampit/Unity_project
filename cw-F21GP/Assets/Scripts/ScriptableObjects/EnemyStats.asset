@@ -16,7 +16,7 @@ MonoBehaviour:
   PatrolSpeed: 2.2
   ChaseSpeed: 3.8
   WanderRadius: 50
-  SightRange: 1000
+  SightRange: 3000
   SightAngle: 120
   AttackRange: 8
   TimeToForgetPlayer: 4

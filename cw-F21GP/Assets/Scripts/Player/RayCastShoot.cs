@@ -6,19 +6,17 @@ namespace F21GP.Player
 {
     public class RayCastShoot : MonoBehaviour
     {
-        [Header("Gun Stats")]
-        [SerializeField] private int _gunDamage = 1;
-        [SerializeField] private float _fireRate = 0.25f;
-        [SerializeField] private float _weaponRange = 50f;
-        [SerializeField] private float _hitForce = 100f;    
-        [SerializeField] private Transform _gunEnd;
+        [Header("Data")]
+        [SerializeField] private GunStats _gunStats; // gun stats
 
         [Header("Components")]
-        [SerializeField] private Camera _fpsCam;                                                
-        [SerializeField] private AudioSource _gunAudio;
-        [SerializeField] private LineRenderer _laserLine;
+        [SerializeField] private Transform _gunEnd; // location of ray cast origin
+        [SerializeField] private Camera _fpsCam; // camera
+        [SerializeField] private AudioSource _gunAudio; // audio source
+        [SerializeField] private LineRenderer _laserLine; // line renderer
         
         private WaitForSeconds _shotDuration = new WaitForSeconds(0.07f);
+        
         private float _nextFire;
 
         void Start()
@@ -32,7 +30,7 @@ namespace F21GP.Player
         {
             if (Input.GetButtonDown("Fire1") && Time.time > _nextFire) 
             {
-                _nextFire = Time.time + _fireRate;
+                _nextFire = Time.time + _gunStats.FireRate;
 
                 StartCoroutine(ShotEffect()); // coroutine is used to create a laser effect (or shot effect)
 
@@ -42,7 +40,7 @@ namespace F21GP.Player
 
                 _laserLine.SetPosition(0, _gunEnd.position);
 
-                if (Physics.Raycast(rayOrigin, _fpsCam.transform.forward, out hit, _weaponRange))
+                if (Physics.Raycast(rayOrigin, _fpsCam.transform.forward, out hit, _gunStats.WeaponRange))
                 {
                     _laserLine.SetPosition(1, hit.point);
                     
@@ -50,7 +48,7 @@ namespace F21GP.Player
                     EnemyAI enemy = hit.collider.GetComponent<EnemyAI>();
                     if (enemy != null)
                     {
-                        enemy.TakeDamage(_gunDamage);
+                        enemy.TakeDamage(_gunStats.GunDamage);
                         enemy.OnNoiseHeard(_gunEnd.position);
                     }
 
@@ -64,12 +62,12 @@ namespace F21GP.Player
                     // check if the hit object has a rigidbody
                     if (hit.rigidbody != null)
                     {
-                        hit.rigidbody.AddForce(-hit.normal * _hitForce);
+                        hit.rigidbody.AddForce(-hit.normal * _gunStats.HitForce);
                     }
                 }
                 else
                 {
-                    _laserLine.SetPosition(1, rayOrigin + (_fpsCam.transform.forward * _weaponRange));
+                    _laserLine.SetPosition(1, rayOrigin + (_fpsCam.transform.forward * _gunStats.WeaponRange));
                 }  
             }
         }

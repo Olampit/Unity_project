@@ -1569,7 +1569,11 @@ MonoBehaviour:
   enemySpawnParent: {fileID: 165351308}
   enemySpawnDelay: 1
   maxEnemies: 30
-  exitPoint: {fileID: 457352151}
+  requiredKills: 30
+  exitPortal: {fileID: 0}
+  timerText: {fileID: 0}
+  killCountText: {fileID: 0}
+  portalMessageText: {fileID: 0}
 --- !u!4 &85256186
 Transform:
   m_ObjectHideFlags: 0
@@ -27189,6 +27193,10 @@ PrefabInstance:
       propertyPath: _gunAudio
       value: 
       objectReference: {fileID: 1533724147}
+    - target: {fileID: 3895286578693457757, guid: 9238825a106514b5f9236973eb2adc60, type: 3}
+      propertyPath: _gunStats
+      value: 
+      objectReference: {fileID: 11400000, guid: 5094c3c59ceb74a6a886cc1bc278f0da, type: 2}
     - target: {fileID: 3895286578693457757, guid: 9238825a106514b5f9236973eb2adc60, type: 3}
       propertyPath: _gunDamage
       value: 1
