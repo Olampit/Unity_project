@@ -29,6 +29,7 @@ namespace F21GP.Core
         [Header("Kill Tracking")]
         [SerializeField] private int requiredKills = 30;
         private int totalKillsTracker = 0;
+        private int totalWaveTracker = 0;
 
         [Header("Exit Portal")]
         public GameObject exitPortal;
@@ -37,6 +38,7 @@ namespace F21GP.Core
         [SerializeField] private TextMeshProUGUI timerText;
         [SerializeField] private TextMeshProUGUI killCountText;
         [SerializeField] private TextMeshProUGUI objectiveMessageText;
+        [SerializeField] private TextMeshProUGUI levelText;
 
         // Level timer
         private float levelTimer = 0f;
@@ -97,17 +99,36 @@ namespace F21GP.Core
         {
             if (objectiveMessageText == null) return;
 
+            switch (totalWaveTracker)
+            {
+                case 0:
+                    levelText.gameObject.SetActive(true);
+                    levelText.text = "Wave 1 / 3";
+                    break;
+                case 1:
+                    levelText.gameObject.SetActive(true);
+                    levelText.text = "Wave 1 / 3";
+                    break;
+                case 2:
+                    levelText.gameObject.SetActive(true);
+                    levelText.text = "Wave 2 / 3";
+                    break;
+                case 3:
+                    levelText.gameObject.SetActive(true);
+                    levelText.text = "Wave 3 / 3";
+                    break;
+            }
+
             // Show for the first 5 seconds of the level, then permanently hide
             if (levelTimer < 5f)
             {
                 objectiveMessageText.gameObject.SetActive(true);
-                string levelLabel = isLevel2 ? "Level 2" : "Level 1";
-                objectiveMessageText.text = $"{levelLabel}\nObjective: Kill {requiredKills} enemies to open the extraction portal.";
+                objectiveMessageText.text = isLevel2 ? "Level 2" : $"Level 1\nObjective: Kill {requiredKills} enemies to open the extraction portal.";
             }
             else if (totalKillsTracker >= requiredKills)
             {
                 objectiveMessageText.gameObject.SetActive(true);
-                objectiveMessageText.text = $"Extraction portal is now open!\nObjective: Find it and escape!";
+                objectiveMessageText.text = isLevel2 ? "" : $"Extraction portal is now open!\nObjective: Find it and escape!";
             }
             else
             {
@@ -321,6 +342,8 @@ namespace F21GP.Core
 
             totalKillsTracker++;
             UpdateKillCountUI();
+
+            totalWaveTracker++;
 
             Debug.Log($"Wave enemies remaining: {currentWaveAlive}");
 
