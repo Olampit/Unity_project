@@ -21,6 +21,9 @@ namespace F21GP.Core
         public float enemySpawnDelay = 5f;
         public int maxEnemies = 1;
 
+        private int currentWaveAlive = 0;
+        private int currentWaveIndex = 0;
+
         private int currentEnemyCount = 0;
 
         [Header("Kill Tracking")]
@@ -49,7 +52,10 @@ namespace F21GP.Core
             isLevel2 = sceneName.Contains("bossdevscene") || sceneName.Contains("bossdevscene");
 
             SpawnPlayerRandomly();
-            StartCoroutine(SpawnEnemiesOverTime());
+            if (isLevel2)
+                StartCoroutine(Level2WaveRoutine());
+            else
+                StartCoroutine(SpawnEnemiesOverTime());
             Debug.Log("LayoutSpawner active on: " + name);
 
             // Ensure portal starts deactivated
@@ -214,12 +220,109 @@ namespace F21GP.Core
             }
         }
 
+        IEnumerator Level2WaveRoutine()
+        {
+            Debug.Log("Level 2 Wave System Started");
+
+            yield return new WaitForSeconds(2f);
+
+            // ---- WAVE 1 ----
+            currentWaveIndex = 1;
+            yield return StartCoroutine(SpawnSquadWave(1,12));
+
+            // ---- WAVE 2 ----
+            currentWaveIndex = 2;
+            yield return StartCoroutine(SpawnSquadWave(2, 12));
+
+            // ---- WAVE 3 ----
+            currentWaveIndex = 3;
+            yield return StartCoroutine(SpawnSquadWave(2, 12));
+
+            Debug.Log("All Level 2 waves completed.");
+        }
+
+        IEnumerator SpawnSquadWave(int squadCount, int squadSize)
+        {
+            Debug.Log($"Spawning Wave {currentWaveIndex}: {squadCount} squads of {squadSize}");
+
+            currentWaveAlive = 0;
+
+            for (int i = 0; i < squadCount; i++)
+            {
+                SpawnSquad(squadSize);
+                yield return new WaitForSeconds(2f);
+            }
+
+            yield return new WaitUntil(() => currentWaveAlive <= 0);
+        }
+
+        void SpawnSquad(int squadSize)
+        {
+            Transform spawn = enemySpawnParent.GetChild(
+                Random.Range(0, enemySpawnParent.childCount)
+            );
+
+            Vector3 basePos = spawn.position;
+            if (NavMesh.SamplePosition(basePos, out NavMeshHit hit, 3f, NavMesh.AllAreas))
+                basePos = hit.position;
+
+            List<EnemyAI> squadMembers = new List<EnemyAI>();
+
+            for (int i = 0; i < squadSize; i++)
+            {
+                Vector3 offset = Random.insideUnitSphere * 2f;
+                offset.y = 0;
+                Vector3 memberPos = basePos + offset;
+
+                if (NavMesh.SamplePosition(memberPos, out NavMeshHit hit2, 3f, NavMesh.AllAreas))
+                    memberPos = hit2.position;
+
+                GameObject enemy = Instantiate(enemyPrefab, memberPos, Quaternion.identity, transform);
+
+                EnemyAI ai = enemy.GetComponent<EnemyAI>();
+                if (ai != null)
+                {
+                    squadMembers.Add(ai);
+                    ai.OnEnemyDeath += HandleWaveEnemyDeath;
+                }
+
+                currentEnemyCount++;
+                currentWaveAlive++;
+            }
+
+            if (squadMembers.Count > 0)
+            {
+                int leaderIndex = Random.Range(0, squadMembers.Count);
+                EnemyAI.FormationType formation =
+                    (Random.value > 0.5f)
+                    ? EnemyAI.FormationType.Line
+                    : EnemyAI.FormationType.Triangle;
+
+                EnemyAI.CreateSquad(squadMembers, leaderIndex, formation);
+            }
+        }
         void HandleEnemyDeath()
         {
             currentEnemyCount = Mathf.Max(0, currentEnemyCount - 1);
             totalKillsTracker++;
             UpdateKillCountUI();
             Debug.Log($"Total kills: {totalKillsTracker}/{requiredKills}");
+
+            if (totalKillsTracker >= requiredKills)
+            {
+                ActivateExitPortal();
+            }
+        }
+
+        void HandleWaveEnemyDeath()
+        {
+            currentEnemyCount = Mathf.Max(0, currentEnemyCount - 1);
+            currentWaveAlive = Mathf.Max(0, currentWaveAlive - 1);
+
+            totalKillsTracker++;
+            UpdateKillCountUI();
+
+            Debug.Log($"Wave enemies remaining: {currentWaveAlive}");
 
             if (totalKillsTracker >= requiredKills)
             {
