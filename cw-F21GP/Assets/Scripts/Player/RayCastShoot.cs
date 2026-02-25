@@ -43,20 +43,18 @@ namespace F21GP.Player
                 if (Physics.Raycast(rayOrigin, _fpsCam.transform.forward, out hit, _gunStats.WeaponRange))
                 {
                     _laserLine.SetPosition(1, hit.point);
-                    
-                    // check if the hit object is an enemy
-                    EnemyAI enemy = hit.collider.GetComponent<EnemyAI>();
-                    if (enemy != null)
-                    {
-                        enemy.TakeDamage(_gunStats.GunDamage);
-                        enemy.OnNoiseHeard(_gunEnd.position);
-                    }
 
                     // check if the hit object is a crash crate
                     Interactions.CrashCrate crate = hit.collider.GetComponent<Interactions.CrashCrate>();
                     if (crate != null)
                     {
                         crate.Break();
+                    }
+
+                    EnemyAI enemy = hit.collider.GetComponent<EnemyAI>();
+                    if (enemy != null) { enemy.TakeDamage(_gunStats.GunDamage); enemy.OnNoiseHeard(_gunEnd.position); }
+                    else { BossAI boss = hit.collider.GetComponent<BossAI>();
+                    if (boss != null) { boss.TakeDamage(_gunStats.GunDamage); boss.SendMessage("OnNoiseHeard", _gunEnd.position, SendMessageOptions.DontRequireReceiver); }
                     }
 
                     // check if the hit object has a rigidbody

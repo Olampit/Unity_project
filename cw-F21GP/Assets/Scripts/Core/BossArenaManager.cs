@@ -18,7 +18,9 @@ namespace F21GP.Core
         public int swarmSize = 12;
 
         [Header("Boss Setup")]
-        [SerializeField] private EnemyAI bossAI;
+        public GameObject bossInstance;
+        public Transform bossSpawnParent;
+        [SerializeField] private BossAI bossAI; 
 
         [Header("Exit Portal")]
         [SerializeField] private GameObject exitPortal;
@@ -36,7 +38,7 @@ namespace F21GP.Core
             SpawnPlayerRandomly();
             SpawnDroneSwarm();
             Debug.Log("BossArenaManager active on: " + name);
-
+            PlaceBossOnSpawnPoint();           
             // Ensure portal starts deactivated
             if (exitPortal != null)
                 exitPortal.SetActive(false);
@@ -146,6 +148,28 @@ namespace F21GP.Core
             Debug.Log($"Spawned swarm of {swarmSize} drones at {spawnPoint.name}");
         }
 
+        public void PlaceBossOnSpawnPoint(int spawnIndex = -1)
+        {
+            if (bossInstance == null || bossSpawnParent == null || bossSpawnParent.childCount == 0) return;
+            int idx = spawnIndex;
+            if (idx < 0) idx = UnityEngine.Random.Range(0, bossSpawnParent.childCount);
+            Transform spawnPoint = bossSpawnParent.GetChild(idx);
+            bossInstance.SetActive(true);
+            var bossAI = bossInstance.GetComponent<BossAI>();
+            if (bossAI != null)
+            {
+                bossAI.PlaceAt(spawnPoint);
+                if (player != null) bossAI.SetPlayer(player); // adapt to your existing player reference name
+                bossAI.OnEnemyDeath += HandleBossDeath;
+            }
+            else
+            {
+                bossInstance.transform.position = spawnPoint.position;
+                bossInstance.transform.rotation = spawnPoint.rotation;
+                var agent = bossInstance.GetComponent<UnityEngine.AI.NavMeshAgent>();
+                if (agent != null) agent.Warp(spawnPoint.position);
+            }
+        }
         void HandleBossDeath()
         {
             Debug.Log($"Boss Defeated! Time: {levelTimer}s");
