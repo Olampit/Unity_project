@@ -1982,7 +1982,7 @@ MonoBehaviour:
   playerSpawnParent: {fileID: 749191892}
   enemyPrefab: {fileID: 5304678388378084072, guid: 164710a7132b74dbba49a09b8776646d, type: 3}
   enemySpawnParent: {fileID: 165351308}
-  enemySpawnDelay: 0.1
+  enemySpawnDelay: 0.2
   maxEnemies: 30
   requiredKills: 1
   exitPortal: {fileID: 457352150}
@@ -15035,6 +15035,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: EnemyDroneWithRayCast Variant 1 (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 6176661124466070872, guid: 62f943f7694fb4e81845ca0f5e526dde, type: 3}
+      propertyPath: _enemyStats
+      value: 
+      objectReference: {fileID: 11400000, guid: cce763360a6c9314d84db54377baeaa9, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
