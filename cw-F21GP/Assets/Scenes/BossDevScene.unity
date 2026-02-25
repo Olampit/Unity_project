@@ -1560,11 +1560,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 566065392}
   playerSpawnParent: {fileID: 749191892}
+  enableWaves: 1
+  swarmsToSpawn: 1
   swarmDronePrefab: {fileID: 1283901433789879108, guid: b95f705c888784a1ca4915a98444dbdc, type: 3}
   enemySpawnParent: {fileID: 165351308}
-  swarmCount: 3
   dronesPerSwarm: 6
-  bossAI: {fileID: 0}
   exitPortal: {fileID: 0}
   timerText: {fileID: 2132585981}
   objectiveMessageText: {fileID: 466866726}
@@ -12869,7 +12869,7 @@ Transform:
   m_GameObject: {fileID: 806592988}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -40, y: -2.81, z: -60}
+  m_LocalPosition: {x: -40, y: -3.59, z: -60}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

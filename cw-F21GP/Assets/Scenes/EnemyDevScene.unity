@@ -1951,7 +1951,7 @@ MonoBehaviour:
   playerSpawnParent: {fileID: 749191892}
   enemyPrefab: {fileID: 5304678388378084072, guid: 164710a7132b74dbba49a09b8776646d, type: 3}
   enemySpawnParent: {fileID: 165351308}
-  enemySpawnDelay: 1
+  enemySpawnDelay: 0.1
   maxEnemies: 30
   requiredKills: 1
   exitPortal: {fileID: 457352150}

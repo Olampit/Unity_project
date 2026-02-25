@@ -13,13 +13,15 @@ namespace F21GP.Core
         public Transform playerSpawnParent;
 
         [Header("Swarm Setup")]
+        public bool enableWaves = true; // this toggle is for demo, where we can show pure swarm system, without waiting for waves to show up
+        public int swarmsToSpawn = 1; // Used if waves are disabled
         public GameObject swarmDronePrefab;
         public Transform enemySpawnParent;
-        public int swarmCount = 1;
-        public int dronesPerSwarm = 12;
-
-        [Header("Boss Setup")]
-        [SerializeField] private EnemyAI bossAI;
+        public int dronesPerSwarm = 6;
+        private int currentWave = 1;
+        private int maxWaves = 3;
+        private int activeDrones = 0;
+        private bool isVictory = false;
 
         [Header("Exit Portal")]
         [SerializeField] private GameObject exitPortal;
@@ -35,22 +37,12 @@ namespace F21GP.Core
         void Start()
         {
             SpawnPlayerRandomly();
-            SpawnDroneSwarms();
+            StartWave(currentWave);
             Debug.Log("BossArenaManager active on: " + name);
 
             // Ensure portal starts deactivated
             if (exitPortal != null)
                 exitPortal.SetActive(false);
-
-            // Subscribe to boss death
-            if (bossAI != null)
-            {
-                bossAI.OnEnemyDeath += HandleBossDeath;
-            }
-            else
-            {
-                Debug.LogWarning("BossArenaManager: No Boss AI assigned!");
-            }
 
             UpdateObjectiveMessage();
         }
@@ -80,20 +72,22 @@ namespace F21GP.Core
         {
             if (objectiveMessageText == null) return;
 
-            // Show for the first 5 seconds of the level
-            if (levelTimer < 5f)
-            {
-                objectiveMessageText.gameObject.SetActive(true);
-                objectiveMessageText.text = "Boss Level\nWave 1\nObjective: Defeat the Boss!";
-            }
-            else if (!timerRunning) // Boss is dead
+            if (isVictory)
             {
                 objectiveMessageText.gameObject.SetActive(true);
                 objectiveMessageText.text = "Victory!\nObjective: Escape through the extraction portal!";
             }
             else
             {
-                objectiveMessageText.gameObject.SetActive(false);
+                objectiveMessageText.gameObject.SetActive(true);
+                if (enableWaves)
+                {
+                    objectiveMessageText.text = $"Boss Level\nWave {currentWave}/{maxWaves}\nObjective: Defeat all swarms!";
+                }
+                else
+                {
+                    objectiveMessageText.text = "Boss Level\nObjective: Defeat the swarms!";
+                }
             }
         }
 
@@ -115,22 +109,28 @@ namespace F21GP.Core
             if (cc != null) cc.enabled = true;
         }
 
-        void SpawnDroneSwarms()
+        void StartWave(int waveNumber)
         {
+            Debug.Log($"Starting Wave {waveNumber}");
+            
             if (swarmDronePrefab == null || enemySpawnParent == null || enemySpawnParent.childCount == 0)
             {
                 Debug.LogWarning("BossArenaManager: Cannot spawn swarms. Missing prefab or spawn points.");
                 return;
             }
 
-            for (int s = 0; s < swarmCount; s++)
+            // If waves are enabled, spawn count corresponds to wave number. Otherwise, use inspector value.
+            int currentSwarmsToSpawn = enableWaves ? waveNumber : swarmsToSpawn;
+            activeDrones = currentSwarmsToSpawn * dronesPerSwarm;
+
+            for (int s = 0; s < currentSwarmsToSpawn; s++)
             {
                 // Each swarm gets its own parent GameObject with a DroneSwarmManager
-                GameObject swarmParent = new GameObject($"Swarm_{s}");
+                GameObject swarmParent = new GameObject($"Swarm_W{waveNumber}_{s}");
                 DroneSwarmManager manager = swarmParent.AddComponent<DroneSwarmManager>();
 
-                // Pick a spawn point (cycle through available points)
-                int spawnIndex = s % enemySpawnParent.childCount;
+                // Pick a spawn point (randomize or cycle)
+                int spawnIndex = Random.Range(0, enemySpawnParent.childCount);
                 Transform spawnPoint = enemySpawnParent.GetChild(spawnIndex);
 
                 for (int i = 0; i < dronesPerSwarm; i++)
@@ -153,15 +153,49 @@ namespace F21GP.Core
                     {
                         member.AssignSwarm(manager);
                     }
+                    
+                    // Listen to death to progress wave
+                    EnemyAI ai = drone.GetComponent<EnemyAI>();
+                    if (ai != null)
+                    {
+                        ai.OnEnemyDeath += HandleDroneDeath;
+                    }
                 }
                 
-                Debug.Log($"Spawned Swarm_{s} with {dronesPerSwarm} drones at {spawnPoint.name}");
+                Debug.Log($"Spawned Wave {waveNumber} Swarm {s} at {spawnPoint.name}");
+            }
+            
+            UpdateObjectiveMessage();
+        }
+
+        void HandleDroneDeath()
+        {
+            activeDrones--;
+            if (activeDrones <= 0)
+            {
+                if (enableWaves)
+                {
+                    currentWave++;
+                    if (currentWave <= maxWaves)
+                    {
+                        StartWave(currentWave);
+                    }
+                    else
+                    {
+                        HandleBossDefeated();
+                    }
+                }
+                else
+                {
+                    HandleBossDefeated();
+                }
             }
         }
 
-        void HandleBossDeath()
+        void HandleBossDefeated()
         {
-            Debug.Log($"Boss Defeated! Time: {levelTimer}s");
+            isVictory = true;
+            Debug.Log($"All Waves Defeated! Time: {levelTimer}s");
 
             ActivateExitPortal();
         }
