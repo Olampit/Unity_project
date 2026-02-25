@@ -80,7 +80,7 @@ namespace F21GP.Core
             }
 
             // Wait for 5 seconds on the loading screen
-            yield return new WaitForSeconds(5f);
+            yield return new WaitForSeconds(1.5f);
 
             // Start loading the scene asynchronously
             AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(bossSceneName);

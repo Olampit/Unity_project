@@ -57,6 +57,7 @@ namespace F21GP.Enemy
 
 
         public event Action OnEnemyDeath;
+        [HideInInspector] public bool OverridePathfinding = false;
 
 
         void Awake()
@@ -160,7 +161,7 @@ namespace F21GP.Enemy
                 }
 
                 // go to current patrol point if we don't have a path
-                if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
+                if (!OverridePathfinding && !agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
                 {
                     patrolIndex = (patrolIndex + 1) % patrolPoints.Length;
                     agent.SetDestination(patrolPoints[patrolIndex].position);
@@ -186,7 +187,7 @@ namespace F21GP.Enemy
                 if (agent.pathPending)
                     return;
 
-                if (!agent.hasPath || agent.remainingDistance <= agent.stoppingDistance + 0.2f)
+                if (!OverridePathfinding && (!agent.hasPath || agent.remainingDistance <= agent.stoppingDistance + 0.2f))
                 {
                     float radius = _enemyStats != null ? _enemyStats.WanderRadius : 8f;
                     Vector3 rnd = transform.position + UnityEngine.Random.insideUnitSphere * radius;
@@ -205,7 +206,10 @@ namespace F21GP.Enemy
                 if (_enemyStats != null) agent.speed = _enemyStats.ChaseSpeed;
 
                 // pathfind to last known player position
-                agent.SetDestination(lastKnownPlayerPosition);
+                if (!OverridePathfinding)
+                {
+                    agent.SetDestination(lastKnownPlayerPosition);
+                }
 
                 // if we have direct vision and are within attack range, attack
                 if (player != null && _enemyStats != null && Vector3.Distance(transform.position, player.position) <= _enemyStats.AttackRange && IsPlayerVisible())
@@ -488,6 +492,7 @@ namespace F21GP.Enemy
 
         void ApplySeparation()
         {
+            if (OverridePathfinding) return;
             if (state == State.Stunned) return;
             if (agent.pathPending) return;
             if (!agent.hasPath) return;
@@ -510,6 +515,7 @@ namespace F21GP.Enemy
             // If agents are jammed (low velocity and close together) retreat a bit
             void ResolveAgentStuck()
             {
+                if (OverridePathfinding) return;
                 if (!agent.enabled || !agent.hasPath) return;
                 // Only reconsider yielding if we aren't currently deeply into a yield (allow slight chaining)
                 if (yieldTimer > 0.5f) return; 
@@ -644,7 +650,7 @@ namespace F21GP.Enemy
             agent.isStopped = false;
 
             // Resume behavior
-            if (patrolPoints != null && patrolPoints.Length > 0)
+            if (!OverridePathfinding && patrolPoints != null && patrolPoints.Length > 0)
             {
                 state = State.Patrol;
                 agent.SetDestination(patrolPoints[patrolIndex].position);

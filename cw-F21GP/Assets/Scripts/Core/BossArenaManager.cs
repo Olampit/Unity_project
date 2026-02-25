@@ -12,6 +12,11 @@ namespace F21GP.Core
         public Transform player;
         public Transform playerSpawnParent;
 
+        [Header("Swarm Setup")]
+        public GameObject swarmDronePrefab;
+        public Transform enemySpawnParent;
+        public int swarmSize = 12;
+
         [Header("Boss Setup")]
         [SerializeField] private EnemyAI bossAI;
 
@@ -29,6 +34,7 @@ namespace F21GP.Core
         void Start()
         {
             SpawnPlayerRandomly();
+            SpawnDroneSwarm();
             Debug.Log("BossArenaManager active on: " + name);
 
             // Ensure portal starts deactivated
@@ -106,6 +112,38 @@ namespace F21GP.Core
             player.rotation = spawn.rotation;
 
             if (cc != null) cc.enabled = true;
+        }
+
+        void SpawnDroneSwarm()
+        {
+            if (swarmDronePrefab == null || enemySpawnParent == null || enemySpawnParent.childCount == 0)
+            {
+                Debug.LogWarning("BossArenaManager: Cannot spawn swarm. Missing prefab or spawn points.");
+                return;
+            }
+
+            // Pick one spawn point randomly
+            int spawnIndex = Random.Range(0, enemySpawnParent.childCount);
+            Transform spawnPoint = enemySpawnParent.GetChild(spawnIndex);
+
+            for (int i = 0; i < swarmSize; i++)
+            {
+                // Add slight random offset to prevent them spawning exactly inside each other
+                Vector3 randomOffset = Random.insideUnitSphere * 2f;
+                randomOffset.y = 0; // keep it flat
+                
+                Vector3 spawnPos = spawnPoint.position + randomOffset;
+
+                // Ensure it's on the NavMesh
+                if (UnityEngine.AI.NavMesh.SamplePosition(spawnPos, out UnityEngine.AI.NavMeshHit hit, 4f, UnityEngine.AI.NavMesh.AllAreas))
+                {
+                    spawnPos = hit.position;
+                }
+                
+                Instantiate(swarmDronePrefab, spawnPos, spawnPoint.rotation);
+            }
+            
+            Debug.Log($"Spawned swarm of {swarmSize} drones at {spawnPoint.name}");
         }
 
         void HandleBossDeath()

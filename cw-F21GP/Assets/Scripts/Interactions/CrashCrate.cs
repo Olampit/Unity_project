@@ -71,7 +71,7 @@ namespace F21GP.Interactions
                     ai.ApplyKnockback(explosionPos, scaledForce, -1f);
                     
                     // Deal damage and alert the enemy
-                    ai.TakeDamage(1);
+                    ai.TakeDamage(0);
                     ai.OnNoiseHeard(explosionPos);
                 }
             }

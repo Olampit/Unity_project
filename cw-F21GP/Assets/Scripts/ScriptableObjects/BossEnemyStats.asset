@@ -13,18 +13,21 @@ MonoBehaviour:
   m_Name: BossEnemyStats
   m_EditorClassIdentifier: 
   MaxHealth: 3
-  PatrolSpeed: 2.2
-  ChaseSpeed: 3.8
+  PatrolSpeed: 10
+  ChaseSpeed: 15
   WanderRadius: 50
-  SightRange: 100
+  SightRange: 10000
   SightAngle: 120
   AttackRange: 8
   TimeToForgetPlayer: 4
   AttackCooldown: 1
-  AttackDamage: 3
+  AttackDamage: 0
   IdleTime: 2
   SeparationRadius: 5
   SeparationStrength: 1.2
+  CohesionStrength: 1
+  AlignmentStrength: 1
+  SwarmMemberAvoidanceRadius: 2
   MinSeparationDistance: 0.8
   RetreatDistance: 1.2
   StuckVelocityThreshold: 0.05
