@@ -33,7 +33,6 @@ namespace F21GP.Core
         [SerializeField] private TextMeshProUGUI killCountText;
         [SerializeField] private TextMeshProUGUI objectiveMessageText;
 
-        // Level timer
         private float levelTimer = 0f;
         private bool timerRunning = true;
 
@@ -43,7 +42,6 @@ namespace F21GP.Core
             StartCoroutine(SpawnEnemiesOverTime());
             Debug.Log("LayoutSpawner active on: " + name);
 
-            // Ensure portal starts deactivated
             if (exitPortal != null)
                 exitPortal.SetActive(false);
 
@@ -54,7 +52,6 @@ namespace F21GP.Core
 
         void Update()
         {
-            // Tick the level timer
             if (timerRunning)
             {
                 levelTimer += Time.deltaTime;
@@ -83,7 +80,6 @@ namespace F21GP.Core
         {
             if (objectiveMessageText == null) return;
 
-            // Show for the first 5 seconds of the level, then permanently hide
             if (levelTimer < 5f)
             {
                 objectiveMessageText.gameObject.SetActive(true);
@@ -100,7 +96,6 @@ namespace F21GP.Core
             }
         }
 
-        // spawn player randomly
 
         void SpawnPlayerRandomly()
         {
@@ -118,7 +113,6 @@ namespace F21GP.Core
             if (cc != null) cc.enabled = true;
         }
 
-        // spawn enemies over time
 
         IEnumerator SpawnEnemiesOverTime()
         {
@@ -127,10 +121,8 @@ namespace F21GP.Core
 
             while (true)
             {
-                // Wait first
                 yield return new WaitForSeconds(enemySpawnDelay);
 
-                // Hard guard: do nothing if at capacity
                 if (currentEnemyCount >= maxEnemies)
                     continue;
 
@@ -146,7 +138,6 @@ namespace F21GP.Core
                 }
                 else
                 {
-                    // fallback: raycast downward
                     if (Physics.Raycast(spawnPos + Vector3.up * 2f, Vector3.down, out RaycastHit groundHit, 10f))
                     {
                         spawnPos = groundHit.point;
@@ -185,7 +176,6 @@ namespace F21GP.Core
 
         void ActivateExitPortal()
         {
-            // Activate the portal object
             if (exitPortal != null)
             {
                 exitPortal.SetActive(true);
@@ -193,14 +183,12 @@ namespace F21GP.Core
             }
         }
 
-        // get exit position
 
         public Vector3 GetExitPosition()
         {
             return exitPortal != null ? exitPortal.transform.position : Vector3.zero;
         }
 
-        // Public getter for the final level time
         public float GetLevelTime() => levelTimer;
     }
 }

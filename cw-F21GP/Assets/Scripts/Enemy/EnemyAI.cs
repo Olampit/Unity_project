@@ -12,35 +12,29 @@ namespace F21GP.Enemy
     public class EnemyAI : MonoBehaviour
     {
         #region Init
-        // FSM
         private enum State { Idle, Patrol, Wander, Chase, Attack, Stunned }
         private State state = State.Idle;
 
         [Header("Data")]
         [SerializeField] private EnemyStats _enemyStats;
 
-        // Components
         [Header("Components")]
         [SerializeField] private NavMeshAgent agent;
         [SerializeField] private Rigidbody rb;
         private Transform player;
 
-        // Idle
         private float idleTimer;
-        private float yieldTimer; // Used for anti-stuck yielding
+        private float yieldTimer;
 
-        // Patrol / wander
         [Header("Movement")]
         public Transform[] patrolPoints;
         private int patrolIndex = 0;
 
-        // Perception
         [Header("Perception")]
-        public LayerMask sightLayerMask = ~0; // default everything
+        public LayerMask sightLayerMask = ~0;
         private Vector3 lastKnownPlayerPosition;
         private float lastSeenTime;
 
-        // Attack
         [Header("Attack")]
         private float lastAttackTime = -999f;
         public Transform[] gunTips;
@@ -48,10 +42,8 @@ namespace F21GP.Enemy
         public float shotDuration = 0.07f;
         public AudioSource gunAudio;
 
-        // Health
         private float currentHealth;
 
-        // Separation / crowd avoidance
         [Header("Crowd")]
         public LayerMask enemyLayerMask;
 
@@ -66,7 +58,7 @@ namespace F21GP.Enemy
             rb = GetComponent<Rigidbody>();
 
             rb.isKinematic = true;
-            rb.useGravity = false;   // navmesh controls vertical normally
+            rb.useGravity = false;  
 
             if (_enemyStats != null) currentHealth = _enemyStats.MaxHealth;
         }
@@ -77,7 +69,6 @@ namespace F21GP.Enemy
             if (GameManager.Instance != null)
                 player = GameManager.Instance.PlayerTransform;
 
-            // Auto-assign if empty (legacy backup)
             if (laserLines == null || laserLines.Length == 0)
             {
                 var lr = GetComponent<LineRenderer>();
@@ -87,7 +78,6 @@ namespace F21GP.Enemy
 
             if (_enemyStats != null) idleTimer = _enemyStats.IdleTime;
 
-            // if no patrol points, start wandering
             if (patrolPoints == null || patrolPoints.Length == 0)
                 state = State.Wander;
             else
@@ -101,8 +91,6 @@ namespace F21GP.Enemy
             if (yieldTimer > 0f && state != State.Stunned)
             {
                 yieldTimer -= Time.deltaTime;
-                // Still allow perception and basic animation while yielding, but skip movement state updates
-                // resolve local deadlocks between agents
                 ResolveAgentStuck();
             }
             else
@@ -116,7 +104,6 @@ namespace F21GP.Enemy
                     case State.Attack: UpdateAttack(); break;
                 }
 
-                // resolve local deadlocks between agents
                 ResolveAgentStuck();
             }
 
@@ -128,12 +115,9 @@ namespace F21GP.Enemy
                 if (_enemyStats != null && agent.stoppingDistance != _enemyStats.AttackRange - 1.0f)
                     agent.stoppingDistance = Mathf.Max(_enemyStats.AttackRange - 1.0f, 0.5f);
             
-                // perception only when not stunned
             if (state != State.Stunned)
                 TryDetectPlayer();
-                if (Time.frameCount % 10 == 0)
             
-            Debug.Log($"{name} state={state} pos={transform.position:F2} dest={agent.destination:F2} remDist={agent.remainingDistance:F2} hasPath={agent.hasPath} pathPending={agent.pathPending}");
         }
 
         #endregion
@@ -160,7 +144,6 @@ namespace F21GP.Enemy
                     return;
                 }
 
-                // go to current patrol point if we don't have a path
                 if (!OverridePathfinding && !agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
                 {
                     patrolIndex = (patrolIndex + 1) % patrolPoints.Length;
@@ -205,13 +188,11 @@ namespace F21GP.Enemy
             {
                 if (_enemyStats != null) agent.speed = _enemyStats.ChaseSpeed;
 
-                // pathfind to last known player position
                 if (!OverridePathfinding)
                 {
                     agent.SetDestination(lastKnownPlayerPosition);
                 }
 
-                // if we have direct vision and are within attack range, attack
                 if (player != null && _enemyStats != null && Vector3.Distance(transform.position, player.position) <= _enemyStats.AttackRange && IsPlayerVisible())
                 {
                     state = State.Attack;
@@ -219,7 +200,6 @@ namespace F21GP.Enemy
                     return;
                 }
 
-                // no recent sight -> give up and wander
                 if (_enemyStats != null && Time.time - lastSeenTime > _enemyStats.TimeToForgetPlayer)
                 {
                     state = State.Wander;
@@ -231,17 +211,14 @@ namespace F21GP.Enemy
 
             void UpdateAttack()
             {
-                // rotate towards player even while attacking
                 if (player != null) FaceTarget(player.position);
 
-                // simple timed attack, deals damage if player has PlayerHealth
                 if (_enemyStats != null && Time.time - lastAttackTime >= _enemyStats.AttackCooldown)
                 {
                     lastAttackTime = Time.time;
                     PerformAttack();
                 }
 
-                // if player moved away, resume chase
                 if (player == null || (_enemyStats != null && Vector3.Distance(transform.position, player.position) > _enemyStats.AttackRange + 0.5f))
                 {
                     agent.isStopped = false;
@@ -252,7 +229,7 @@ namespace F21GP.Enemy
         void FaceTarget(Vector3 target)
         {
             Vector3 direction = (target - transform.position).normalized;
-            direction.y = 0; // maintain upright orientation
+            direction.y = 0; 
             Quaternion lookRotation = Quaternion.LookRotation(direction);
             transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
         }
@@ -329,21 +306,17 @@ namespace F21GP.Enemy
 
         void PerformAttack()
         {
-            // try to damage player if they have PlayerCharacterController
             if (player != null)
             {
                 StartCoroutine(ShotEffect());
 
-                // Use first gun tip for logic, or enemy center if none
                 Vector3 logicalOrigin = (gunTips != null && gunTips.Length > 0 && gunTips[0] != null) 
                                         ? gunTips[0].position 
                                         : transform.position + Vector3.up * 1.5f;
 
-                // Aim for chest/head instead of feet
                 Vector3 targetPoint = player.position + Vector3.up * -0.7f + transform.right * -0.3f; 
                 Vector3 direction = (targetPoint - logicalOrigin).normalized;
 
-                // 1. VISUALS: Set all lasers
                 if (laserLines != null && gunTips != null)
                 {
                     for (int i = 0; i < laserLines.Length; i++)
@@ -353,21 +326,17 @@ namespace F21GP.Enemy
 
                         laserLines[i].SetPosition(0, gunTips[i].position);
                         
-                        // We can simply draw the line to where the logic raycast hits (or misses)
-                        // but relative to this gun tip's perspective, it might look slightly off if perfectly parallel.
-                        // For simplicity, we'll draw to the same 'hit point' or 'target direction'
+            
                     }
                 }
 
-                // 2. LOGIC: Single raycast for damage
                 float shootDist = 100f; 
-                Vector3 hitPoint = logicalOrigin + (direction * shootDist); // default miss pos
+                Vector3 hitPoint = logicalOrigin + (direction * shootDist); 
 
                 if (Physics.Raycast(logicalOrigin, direction, out RaycastHit hit, shootDist, sightLayerMask)) 
                 {
                     hitPoint = hit.point;
 
-                    // Check for player
                     var hitPCC = hit.collider.GetComponentInParent<PlayerCharacterController>();
                     
                     if (hit.transform == player || hit.collider.CompareTag("Player") || hitPCC != null)
@@ -425,7 +394,6 @@ namespace F21GP.Enemy
         }
 
 
-        // simple health on the enemy itself
         public void TakeDamage(float amount)
         {
             currentHealth -= amount;
@@ -437,7 +405,7 @@ namespace F21GP.Enemy
 
         void OnDamageReaction()
         {
-            // small reaction: go to last known player position and chase
+            // small reaction, as in go to last known player position and chase
             if (player != null)
             {
                 lastKnownPlayerPosition = player.position;
@@ -499,25 +467,21 @@ namespace F21GP.Enemy
 
             Vector3 sep = ComputeSeparationOffset();
 
-            // Only apply if meaningful
             if (sep.sqrMagnitude < 0.3f * 0.3f)
                 return;
 
             Vector3 newDest = agent.destination + sep;
 
-            // Only update if destination actually changed significantly
             if (Vector3.Distance(newDest, agent.destination) > 0.5f)
             {
                 agent.SetDestination(newDest);
             }
         }
 
-            // If agents are jammed (low velocity and close together) retreat a bit
             void ResolveAgentStuck()
             {
                 if (OverridePathfinding) return;
                 if (!agent.enabled || !agent.hasPath) return;
-                // Only reconsider yielding if we aren't currently deeply into a yield (allow slight chaining)
                 if (yieldTimer > 0.5f) return; 
 
                 if (_enemyStats != null && agent.velocity.magnitude >= _enemyStats.StuckVelocityThreshold) return;
@@ -531,12 +495,9 @@ namespace F21GP.Enemy
                 {
                     if (c.gameObject == gameObject) continue;
 
-                    // ASYMMETRY: Only the drone with the HIGHER ID will yield and retreat.
-                    // This prevents both drones from endlessly reversing and pushing into each other.
                     if (gameObject.GetInstanceID() < c.gameObject.GetInstanceID()) return;
 
                     Vector3 away = transform.position - c.transform.position;
-                    // Emphasize moving backwards
                     away += -transform.forward * 1.5f; 
 
                     if (away.sqrMagnitude > 0.001f)
@@ -551,7 +512,7 @@ namespace F21GP.Enemy
                 if (NavMesh.SamplePosition(retreatTarget, out NavMeshHit hit, retDist, NavMesh.AllAreas))
                 {
                     agent.SetDestination(hit.position);
-                    yieldTimer = 1.0f; // Pause normal AI for 1 second to actually back up
+                    yieldTimer = 1.0f; 
                 }
             }
 
@@ -576,25 +537,20 @@ namespace F21GP.Enemy
         {
             state = State.Stunned;
 
-            // Stop agent safely
             agent.isStopped = true;
             agent.updatePosition = false;
             agent.updateRotation = false;
-            agent.ResetPath();   // CRITICAL: clear internal path memory
-
-            // Small lift to avoid ground depenetration pop
+            agent.ResetPath();   
             transform.position += Vector3.up * 0.05f;
 
-            // Enable physics
             rb.isKinematic = false;
-            rb.useGravity = false;   // we control Y manually
+            rb.useGravity = false;   
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
 
             RigidbodyConstraints originalConstraints = rb.constraints;
             rb.constraints = RigidbodyConstraints.FreezeRotation;
 
-            // ---- HORIZONTAL BLAST ONLY ----
             Vector3 dir = transform.position - sourcePosition;
             dir.y = 0f;
 
@@ -611,7 +567,6 @@ namespace F21GP.Enemy
             {
                 timer += Time.deltaTime;
 
-                // HARD LOCK Y to prevent hovering
                 Vector3 pos = transform.position;
                 pos.y = 1.9f;   
                 transform.position = pos;
@@ -619,37 +574,30 @@ namespace F21GP.Enemy
                 yield return null;
             }
 
-            // ---- STOP PHYSICS ----
             rb.constraints = originalConstraints;
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
             rb.isKinematic = true;
 
-            // ---- CRITICAL SYNC ORDER ----
 
             Vector3 finalPos = transform.position;
 
-            // Snap to NavMesh
             if (NavMesh.SamplePosition(finalPos, out NavMeshHit hit, 2f, NavMesh.AllAreas))
             {
                 finalPos = hit.position;
             }
 
-            // Move transform FIRST
             transform.position = finalPos;
 
-            // Sync agent internal position BEFORE enabling updatePosition
             agent.nextPosition = finalPos;
 
-            // Warp agent (keeps internal + transform consistent)
             agent.Warp(finalPos);
 
-            // Re-enable agent control
             agent.updatePosition = true;
             agent.updateRotation = true;
             agent.isStopped = false;
 
-            // Resume behavior
+            // resume behavior
             if (!OverridePathfinding && patrolPoints != null && patrolPoints.Length > 0)
             {
                 state = State.Patrol;
@@ -667,7 +615,6 @@ namespace F21GP.Enemy
 
         #region Utilities
 
-        // external forcing (debug or leader logic)
         public void ForceChase(Transform target)
         {
             player = target;

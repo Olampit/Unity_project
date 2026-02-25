@@ -11,9 +11,6 @@ namespace F21GP.UI
 
         private void Start()
         {
-            // Ensure pause menu is hidden at start
-            // We check !IsPaused so that if the GameObject is disabled in the editor 
-            // and first activated via the Escape key, it doesn't immediately hide itself!
             if (_pauseMenuUI != null && !IsPaused)
             {
                 _pauseMenuUI.SetActive(false);
@@ -38,7 +35,6 @@ namespace F21GP.UI
             Time.timeScale = 0f;
             IsPaused = true;
 
-            // Unlock cursor so player can click buttons
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
@@ -49,20 +45,19 @@ namespace F21GP.UI
             Time.timeScale = 1f;
             IsPaused = false;
 
-            // Lock cursor back
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
 
         public void RestartButton()
         {
-            Time.timeScale = 1f; // Resume time before reloading
+            Time.timeScale = 1f; 
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
 
         public void MainMenuButton()
         {
-            Time.timeScale = 1f; // Resume time
+            Time.timeScale = 1f; 
             SceneManager.LoadScene("MainMenu");
         }
     }

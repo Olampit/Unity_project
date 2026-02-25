@@ -14,7 +14,7 @@ namespace F21GP.UI
         public void QuitGame()
         {
             Application.Quit();
-            Debug.Log("Quit Game"); // Does not happen in editor
+            Debug.Log("Quit Game"); 
         }
 
         public void ControlsButton()
