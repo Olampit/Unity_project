@@ -159,7 +159,7 @@ namespace F21GP.Core
             if (bossAI != null)
             {
                 bossAI.PlaceAt(spawnPoint);
-                if (player != null) bossAI.SetPlayer(player); // adapt to your existing player reference name
+                if (player != null) bossAI.SetPlayer(player);
                 bossAI.OnEnemyDeath += HandleBossDeath;
             }
             else

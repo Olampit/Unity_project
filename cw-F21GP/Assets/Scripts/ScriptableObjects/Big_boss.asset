@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: de9ece07d8b134c898e83ab86e51aaf6, type: 3}
-  m_Name: BossEnemyStats
+  m_Name: Big_boss
   m_EditorClassIdentifier: 
-  MaxHealth: 3
-  PatrolSpeed: 10
-  ChaseSpeed: 15
-  WanderRadius: 50
-  SightRange: 10000
+  MaxHealth: 30
+  PatrolSpeed: 5
+  ChaseSpeed: 7.5
+  WanderRadius: 100
+  SightRange: 500
   SightAngle: 120
   AttackRange: 8
   TimeToForgetPlayer: 4
-  AttackCooldown: 1
-  AttackDamage: 3
+  AttackCooldown: 0.5
+  AttackDamage: 6
   IdleTime: 2
   SeparationRadius: 5
   SeparationStrength: 1.2
@@ -32,4 +32,4 @@ MonoBehaviour:
   RetreatDistance: 1.2
   StuckVelocityThreshold: 0.05
   StunDuration: 1
-  KnockbackForce: 6
+  KnockbackForce: 600
