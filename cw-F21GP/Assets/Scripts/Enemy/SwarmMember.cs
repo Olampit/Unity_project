@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using F21GP.Managers;
 
 namespace F21GP.Enemy
 {
@@ -70,8 +72,12 @@ namespace F21GP.Enemy
             bool isLeader = Swarm.Leader == this;
             enemyAI.OverridePathfinding = !isLeader;
 
-            // The Leader does not need swarm forces, it leads the pack
-            if (isLeader) return;
+            // The Leader applies separation from other leaders and the player
+            if (isLeader)
+            {
+                ApplyLeaderSeparation();
+                return;
+            }
 
             // CRITICAL: Followers must always be moving. EnemyAI's Idle state
             // sets isStopped=true which freezes the agent even if we set a destination.
@@ -115,6 +121,63 @@ namespace F21GP.Enemy
             if (Vector3.Distance(Agent.destination, newDest) > 1.5f)
             {
                 if (NavMesh.SamplePosition(newDest, out NavMeshHit hit, 4.0f, NavMesh.AllAreas))
+                {
+                    Agent.SetDestination(hit.position);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Leaders push away from other swarm leaders and maintain distance from the player.
+        /// This prevents multiple swarms from merging into one blob.
+        /// </summary>
+        private void ApplyLeaderSeparation()
+        {
+            if (!Agent.enabled || Agent.pathPending) return;
+
+            float leaderSepRadius = _enemyStats != null ? _enemyStats.LeaderSeparationRadius : 10f;
+            float leaderSepStrength = _enemyStats != null ? _enemyStats.LeaderSeparationStrength : 3f;
+            float playerSepRadius = _enemyStats != null ? _enemyStats.LeaderPlayerSeparationRadius : 6f;
+            float playerSepStrength = _enemyStats != null ? _enemyStats.LeaderPlayerSeparationStrength : 2f;
+
+            Vector3 separationForce = Vector3.zero;
+            Vector3 currentPos = transform.position;
+
+            // --- 1. Separation from other swarm leaders ---
+            foreach (var manager in DroneSwarmManager.AllManagers)
+            {
+                if (manager == Swarm || manager.Leader == null) continue;
+
+                Vector3 toOtherLeader = currentPos - manager.Leader.transform.position;
+                toOtherLeader.y = 0;
+                float dist = toOtherLeader.magnitude;
+
+                if (dist < leaderSepRadius && dist > 0.01f)
+                {
+                    // Stronger push the closer they are
+                    separationForce += toOtherLeader.normalized * (leaderSepStrength / dist);
+                }
+            }
+
+            // --- 2. Separation from the player ---
+            Transform playerTransform = GameManager.Instance != null ? GameManager.Instance.PlayerTransform : null;
+            if (playerTransform != null)
+            {
+                Vector3 toPlayer = currentPos - playerTransform.position;
+                toPlayer.y = 0;
+                float playerDist = toPlayer.magnitude;
+
+                if (playerDist < playerSepRadius && playerDist > 0.01f)
+                {
+                    separationForce += toPlayer.normalized * (playerSepStrength / playerDist);
+                }
+            }
+
+            // Apply the separation offset to the current destination
+            if (separationForce.sqrMagnitude > 0.1f)
+            {
+                Vector3 newDest = Agent.destination + separationForce;
+                if (NavMesh.SamplePosition(newDest, out NavMeshHit hit, 4f, NavMesh.AllAreas))
                 {
                     Agent.SetDestination(hit.position);
                 }

@@ -9,6 +9,9 @@ namespace F21GP.Enemy
     /// </summary>
     public class DroneSwarmManager : MonoBehaviour
     {
+        // Static registry so leaders can find each other across swarms
+        public static List<DroneSwarmManager> AllManagers = new List<DroneSwarmManager>();
+
         private List<SwarmMember> activeSwarmMembers = new List<SwarmMember>();
 
         public Vector3 SwarmCenter { get; private set; }
@@ -16,6 +19,17 @@ namespace F21GP.Enemy
         public int SwarmCount => activeSwarmMembers.Count;
         
         public SwarmMember Leader { get; private set; }
+
+        private void OnEnable()
+        {
+            if (!AllManagers.Contains(this))
+                AllManagers.Add(this);
+        }
+
+        private void OnDisable()
+        {
+            AllManagers.Remove(this);
+        }
 
         public void RegisterMember(SwarmMember member)
         {

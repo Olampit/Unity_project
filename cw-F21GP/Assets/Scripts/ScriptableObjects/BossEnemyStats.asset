@@ -23,11 +23,15 @@ MonoBehaviour:
   AttackCooldown: 1
   AttackDamage: 0
   IdleTime: 2
-  SeparationRadius: 5
+  SeparationRadius: 50
   SeparationStrength: 1.2
   CohesionStrength: 1
   AlignmentStrength: 1
-  SwarmMemberAvoidanceRadius: 2
+  SwarmMemberAvoidanceRadius: 3
+  LeaderSeparationRadius: 10
+  LeaderSeparationStrength: 3
+  LeaderPlayerSeparationRadius: 6
+  LeaderPlayerSeparationStrength: 2
   MinSeparationDistance: 0.8
   RetreatDistance: 1.2
   StuckVelocityThreshold: 0.05
