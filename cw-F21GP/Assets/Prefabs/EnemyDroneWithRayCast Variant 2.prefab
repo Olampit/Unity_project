@@ -64,6 +64,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: EnemyDroneWithRayCast Variant 2
       objectReference: {fileID: 0}
+    - target: {fileID: 7803045070240557774, guid: 62f943f7694fb4e81845ca0f5e526dde, type: 3}
+      propertyPath: m_Speed
+      value: 2.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7803045070240557774, guid: 62f943f7694fb4e81845ca0f5e526dde, type: 3}
+      propertyPath: m_Acceleration
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7803045070240557774, guid: 62f943f7694fb4e81845ca0f5e526dde, type: 3}
+      propertyPath: m_StoppingDistance
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

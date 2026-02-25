@@ -17,6 +17,9 @@ namespace F21GP.Interactions
         [Header("Audio")]
         public AudioSource crashAudioClip;
 
+        [Header("Damage")]
+        public int damage = 1;
+
         [Header("Explosion Settings")]
         public float explosionRadius = 6f;
         public float explosionForce = 15f;
@@ -71,7 +74,7 @@ namespace F21GP.Interactions
                     ai.ApplyKnockback(explosionPos, scaledForce, -1f);
                     
                     // Deal damage and alert the enemy
-                    ai.TakeDamage(0);
+                    ai.TakeDamage(damage);
                     ai.OnNoiseHeard(explosionPos);
                 }
             }
