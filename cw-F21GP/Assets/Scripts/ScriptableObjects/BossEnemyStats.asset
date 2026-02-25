@@ -21,7 +21,7 @@ MonoBehaviour:
   AttackRange: 8
   TimeToForgetPlayer: 4
   AttackCooldown: 1
-  AttackDamage: 0
+  AttackDamage: 3
   IdleTime: 2
   SeparationRadius: 50
   SeparationStrength: 1

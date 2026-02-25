@@ -63,7 +63,7 @@ namespace F21GP.UI
         public void MainMenuButton()
         {
             Time.timeScale = 1f; // Resume time
-            SceneManager.LoadScene("MainMenu"); // Make sure to name your start scene "MainMenu"
+            SceneManager.LoadScene("MainMenu");
         }
     }
 }

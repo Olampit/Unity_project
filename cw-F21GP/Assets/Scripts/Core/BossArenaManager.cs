@@ -232,7 +232,7 @@ namespace F21GP.Core
         private IEnumerator LoadMainMenuDelayed()
         {
             yield return new WaitForSeconds(5f);
-            SceneManager.LoadScene("MainMenu");
+            SceneManager.LoadScene("WinScreen");
         }
     }
 }
