@@ -72,7 +72,7 @@ namespace F21GP.Core
             if (isVictory)
             {
                 objectiveMessageText.gameObject.SetActive(true);
-                objectiveMessageText.text = "Victory!\nObjective: Escape through the extraction portal!";
+                objectiveMessageText.text = "Victory!\nYou have successfully escaped the dungeon, hope you enjoyed the playthrough !";
             }
             else
             {
