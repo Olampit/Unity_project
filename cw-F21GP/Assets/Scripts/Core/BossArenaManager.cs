@@ -13,8 +13,8 @@ namespace F21GP.Core
         public Transform playerSpawnParent;
 
         [Header("Swarm Setup")]
-        public bool enableWaves = true; // this toggle is for demo, where we can show pure swarm system, without waiting for waves to show up
-        public int swarmsToSpawn = 1; // Used if waves are disabled
+        public bool enableWaves = true;
+        public int swarmsToSpawn = 1;
         public GameObject swarmDronePrefab;
         public Transform enemySpawnParent;
         public int dronesPerSwarm = 6;
@@ -30,7 +30,6 @@ namespace F21GP.Core
         [SerializeField] private TextMeshProUGUI timerText;
         [SerializeField] private TextMeshProUGUI objectiveMessageText;
 
-        // Level timer
         private float levelTimer = 0f;
         private bool timerRunning = true;
 
@@ -40,7 +39,6 @@ namespace F21GP.Core
             StartWave(currentWave);
             Debug.Log("BossArenaManager active on: " + name);
 
-            // Ensure portal starts deactivated
             if (exitPortal != null)
                 exitPortal.SetActive(false);
 
@@ -49,7 +47,6 @@ namespace F21GP.Core
 
         void Update()
         {
-            // Tick the level timer
             if (timerRunning)
             {
                 levelTimer += Time.deltaTime;
@@ -91,7 +88,6 @@ namespace F21GP.Core
             }
         }
 
-        // spawn player randomly
 
         void SpawnPlayerRandomly()
         {

@@ -48,3 +48,8 @@ These scripts are located in Assets/Scripts:
 ##
 
 All custom code uses C# and is under the F21GP namespace.
+
+## Assets used : 
+ennemies https://assetstore.unity.com/packages/3d/characters/robots/low-poly-combat-drone-82234
+maze layout https://assetstore.unity.com/packages/3d/environments/dungeons/tileable-maze-and-dungeon-blocks-259878
+crash crate https://assetstore.unity.com/packages/3d/props/industrial/crash-crate-161268
