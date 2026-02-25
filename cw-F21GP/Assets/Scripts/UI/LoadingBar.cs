@@ -10,7 +10,6 @@ public class LoadingBar : MonoBehaviour {
     public float speed = 0.2f;
    
 
-    // Use this for initialization
     void Start () {
         rectComponent = GetComponent<RectTransform>();
         imageComp = rectComponent.GetComponent<Image>();

@@ -7,13 +7,13 @@ namespace F21GP.Player
     public class RayCastShoot : MonoBehaviour
     {
         [Header("Data")]
-        [SerializeField] private GunStats _gunStats; // gun stats
+        [SerializeField] private GunStats _gunStats; 
 
         [Header("Components")]
-        [SerializeField] private Transform _gunEnd; // location of ray cast origin
-        [SerializeField] private Camera _fpsCam; // camera
-        [SerializeField] private AudioSource _gunAudio; // audio source
-        [SerializeField] private LineRenderer _laserLine; // line renderer
+        [SerializeField] private Transform _gunEnd; 
+        [SerializeField] private Camera _fpsCam; 
+        [SerializeField] private AudioSource _gunAudio; 
+        [SerializeField] private LineRenderer _laserLine; 
         
         private WaitForSeconds _shotDuration = new WaitForSeconds(0.07f);
         
@@ -32,7 +32,7 @@ namespace F21GP.Player
             {
                 _nextFire = Time.time + _gunStats.FireRate;
 
-                StartCoroutine(ShotEffect()); // coroutine is used to create a laser effect (or shot effect)
+                StartCoroutine(ShotEffect()); 
 
                 Vector3 rayOrigin = _fpsCam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 0.0f));
 
@@ -44,7 +44,6 @@ namespace F21GP.Player
                 {
                     _laserLine.SetPosition(1, hit.point);
                     
-                    // check if the hit object is an enemy
                     EnemyAI enemy = hit.collider.GetComponent<EnemyAI>();
                     if (enemy != null)
                     {
@@ -52,14 +51,12 @@ namespace F21GP.Player
                         enemy.OnNoiseHeard(_gunEnd.position);
                     }
 
-                    // check if the hit object is a crash crate
                     Interactions.CrashCrate crate = hit.collider.GetComponent<Interactions.CrashCrate>();
                     if (crate != null)
                     {
                         crate.Break();
                     }
 
-                    // check if the hit object has a rigidbody
                     if (hit.rigidbody != null)
                     {
                         hit.rigidbody.AddForce(-hit.normal * _gunStats.HitForce);
