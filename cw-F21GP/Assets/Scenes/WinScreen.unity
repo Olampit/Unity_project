@@ -980,7 +980,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 772406448}
         m_TargetAssemblyTypeName: F21GP.UI.WinMenu, Assembly-CSharp
-        m_MethodName: MainMenu
+        m_MethodName: MainMenuButton
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
