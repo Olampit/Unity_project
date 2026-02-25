@@ -10,27 +10,27 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5304678388377599688, guid: 62f943f7694fb4e81845ca0f5e526dde, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.48734
+      value: 0.5296245
       objectReference: {fileID: 0}
     - target: {fileID: 5304678388377599688, guid: 62f943f7694fb4e81845ca0f5e526dde, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.48734
+      value: 0.5296245
       objectReference: {fileID: 0}
     - target: {fileID: 5304678388377599688, guid: 62f943f7694fb4e81845ca0f5e526dde, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.48734
+      value: 0.5296245
       objectReference: {fileID: 0}
     - target: {fileID: 5304678388377599688, guid: 62f943f7694fb4e81845ca0f5e526dde, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -8.5364
+      value: -4.3582
       objectReference: {fileID: 0}
     - target: {fileID: 5304678388377599688, guid: 62f943f7694fb4e81845ca0f5e526dde, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.33534
+      value: 0.026533
       objectReference: {fileID: 0}
     - target: {fileID: 5304678388377599688, guid: 62f943f7694fb4e81845ca0f5e526dde, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -10.228
+      value: -7.9225
       objectReference: {fileID: 0}
     - target: {fileID: 5304678388377599688, guid: 62f943f7694fb4e81845ca0f5e526dde, type: 3}
       propertyPath: m_LocalRotation.w
@@ -90,3 +90,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _enemyStats: {fileID: 11400000, guid: ff1e3e2b04d554417bfc89a03615d4e3, type: 2}
+  Swarm: {fileID: 0}

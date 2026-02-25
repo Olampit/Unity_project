@@ -15,7 +15,8 @@ namespace F21GP.Core
         [Header("Swarm Setup")]
         public GameObject swarmDronePrefab;
         public Transform enemySpawnParent;
-        public int swarmSize = 12;
+        public int swarmCount = 1;
+        public int dronesPerSwarm = 12;
 
         [Header("Boss Setup")]
         [SerializeField] private EnemyAI bossAI;
@@ -34,7 +35,7 @@ namespace F21GP.Core
         void Start()
         {
             SpawnPlayerRandomly();
-            SpawnDroneSwarm();
+            SpawnDroneSwarms();
             Debug.Log("BossArenaManager active on: " + name);
 
             // Ensure portal starts deactivated
@@ -114,36 +115,48 @@ namespace F21GP.Core
             if (cc != null) cc.enabled = true;
         }
 
-        void SpawnDroneSwarm()
+        void SpawnDroneSwarms()
         {
             if (swarmDronePrefab == null || enemySpawnParent == null || enemySpawnParent.childCount == 0)
             {
-                Debug.LogWarning("BossArenaManager: Cannot spawn swarm. Missing prefab or spawn points.");
+                Debug.LogWarning("BossArenaManager: Cannot spawn swarms. Missing prefab or spawn points.");
                 return;
             }
 
-            // Pick one spawn point randomly
-            int spawnIndex = Random.Range(0, enemySpawnParent.childCount);
-            Transform spawnPoint = enemySpawnParent.GetChild(spawnIndex);
-
-            for (int i = 0; i < swarmSize; i++)
+            for (int s = 0; s < swarmCount; s++)
             {
-                // Add slight random offset to prevent them spawning exactly inside each other
-                Vector3 randomOffset = Random.insideUnitSphere * 2f;
-                randomOffset.y = 0; // keep it flat
-                
-                Vector3 spawnPos = spawnPoint.position + randomOffset;
+                // Each swarm gets its own parent GameObject with a DroneSwarmManager
+                GameObject swarmParent = new GameObject($"Swarm_{s}");
+                DroneSwarmManager manager = swarmParent.AddComponent<DroneSwarmManager>();
 
-                // Ensure it's on the NavMesh
-                if (UnityEngine.AI.NavMesh.SamplePosition(spawnPos, out UnityEngine.AI.NavMeshHit hit, 4f, UnityEngine.AI.NavMesh.AllAreas))
+                // Pick a spawn point (cycle through available points)
+                int spawnIndex = s % enemySpawnParent.childCount;
+                Transform spawnPoint = enemySpawnParent.GetChild(spawnIndex);
+
+                for (int i = 0; i < dronesPerSwarm; i++)
                 {
-                    spawnPos = hit.position;
+                    Vector3 randomOffset = Random.insideUnitSphere * 2f;
+                    randomOffset.y = 0;
+                    
+                    Vector3 spawnPos = spawnPoint.position + randomOffset;
+
+                    if (UnityEngine.AI.NavMesh.SamplePosition(spawnPos, out UnityEngine.AI.NavMeshHit hit, 4f, UnityEngine.AI.NavMesh.AllAreas))
+                    {
+                        spawnPos = hit.position;
+                    }
+                    
+                    GameObject drone = Instantiate(swarmDronePrefab, spawnPos, spawnPoint.rotation, swarmParent.transform);
+                    
+                    // Assign drone to this specific swarm
+                    SwarmMember member = drone.GetComponent<SwarmMember>();
+                    if (member != null)
+                    {
+                        member.AssignSwarm(manager);
+                    }
                 }
                 
-                Instantiate(swarmDronePrefab, spawnPos, spawnPoint.rotation);
+                Debug.Log($"Spawned Swarm_{s} with {dronesPerSwarm} drones at {spawnPoint.name}");
             }
-            
-            Debug.Log($"Spawned swarm of {swarmSize} drones at {spawnPoint.name}");
         }
 
         void HandleBossDeath()

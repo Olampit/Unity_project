@@ -3,10 +3,12 @@ using UnityEngine;
 
 namespace F21GP.Enemy
 {
+    /// <summary>
+    /// Each instance of this component manages one independent swarm.
+    /// Attach to a parent GameObject per swarm (created at runtime by BossArenaManager).
+    /// </summary>
     public class DroneSwarmManager : MonoBehaviour
     {
-        public static DroneSwarmManager Instance { get; private set; }
-
         private List<SwarmMember> activeSwarmMembers = new List<SwarmMember>();
 
         public Vector3 SwarmCenter { get; private set; }
@@ -14,18 +16,6 @@ namespace F21GP.Enemy
         public int SwarmCount => activeSwarmMembers.Count;
         
         public SwarmMember Leader { get; private set; }
-
-        private void Awake()
-        {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
 
         public void RegisterMember(SwarmMember member)
         {
