@@ -16,5 +16,11 @@ namespace F21GP.UI
             Application.Quit();
             Debug.Log("Quit Game"); // Does not happen in editor
         }
+
+        public void ControlsButton()
+        {
+            Time.timeScale = 1f;
+            SceneManager.LoadScene("ControlsScreen");
+        }
     }
 }
