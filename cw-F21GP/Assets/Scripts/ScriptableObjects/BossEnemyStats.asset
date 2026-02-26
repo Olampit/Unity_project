@@ -14,17 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MaxHealth: 3
   PatrolSpeed: 2.2
-  ChaseSpeed: 3.8
-  WanderRadius: 50
-  SightRange: 100
+  ChaseSpeed: 3.5
+  WanderRadius: 10
+  SightRange: 10000
   SightAngle: 120
   AttackRange: 8
   TimeToForgetPlayer: 4
   AttackCooldown: 1
   AttackDamage: 3
   IdleTime: 2
-  SeparationRadius: 5
-  SeparationStrength: 1.2
+  SeparationRadius: 50
+  SeparationStrength: 1
+  CohesionStrength: 1
+  AlignmentStrength: 1
+  SwarmMemberAvoidanceRadius: 1
+  LeaderSeparationRadius: 10
+  LeaderSeparationStrength: 8
+  LeaderPlayerSeparationRadius: 6
+  LeaderPlayerSeparationStrength: 6
   MinSeparationDistance: 0.8
   RetreatDistance: 1.2
   StuckVelocityThreshold: 0.05

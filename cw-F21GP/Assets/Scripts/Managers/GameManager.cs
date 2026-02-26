@@ -1,4 +1,3 @@
-// this script is used to manage the game state
 using UnityEngine;
 
 namespace F21GP.Managers
@@ -10,21 +9,20 @@ namespace F21GP.Managers
         [Header("Global References")]
         [SerializeField] private Transform _playerTransform;
 
-        public Transform PlayerTransform => _playerTransform; // get player transform
+        public Transform PlayerTransform => _playerTransform; 
 
-        private void Awake() // Awake is called when the script is loaded
+        private void Awake() 
         {
-            if (Instance != null && Instance != this) // Instance is needed here to make sure there is only one instance of the game manager
+            if (Instance != null && Instance != this) 
             {
-                Destroy(gameObject); // destroy the game object
+                Destroy(gameObject);
                 return;
             }
             Instance = this;
         }
 
-        public void GameOver() // GameOver is called when the game is over
+        public void GameOver() 
         {
-            Debug.Log("Game Over triggered via GameManager.");
         }
     }
 }

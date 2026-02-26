@@ -6,19 +6,17 @@ namespace F21GP.Player
 {
     public class RayCastShoot : MonoBehaviour
     {
-        [Header("Gun Stats")]
-        [SerializeField] private int _gunDamage = 1;
-        [SerializeField] private float _fireRate = 0.25f;
-        [SerializeField] private float _weaponRange = 50f;
-        [SerializeField] private float _hitForce = 100f;    
-        [SerializeField] private Transform _gunEnd;
+        [Header("Data")]
+        [SerializeField] private GunStats _gunStats; 
 
         [Header("Components")]
-        [SerializeField] private Camera _fpsCam;                                                
-        [SerializeField] private AudioSource _gunAudio;
-        [SerializeField] private LineRenderer _laserLine;
+        [SerializeField] private Transform _gunEnd; 
+        [SerializeField] private Camera _fpsCam; 
+        [SerializeField] private AudioSource _gunAudio; 
+        [SerializeField] private LineRenderer _laserLine; 
         
         private WaitForSeconds _shotDuration = new WaitForSeconds(0.07f);
+        
         private float _nextFire;
 
         void Start()
@@ -32,9 +30,9 @@ namespace F21GP.Player
         {
             if (Input.GetButtonDown("Fire1") && Time.time > _nextFire) 
             {
-                _nextFire = Time.time + _fireRate;
+                _nextFire = Time.time + _gunStats.FireRate;
 
-                StartCoroutine(ShotEffect()); // coroutine is used to create a laser effect (or shot effect)
+                StartCoroutine(ShotEffect()); 
 
                 Vector3 rayOrigin = _fpsCam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 0.0f));
 
@@ -42,34 +40,31 @@ namespace F21GP.Player
 
                 _laserLine.SetPosition(0, _gunEnd.position);
 
-                if (Physics.Raycast(rayOrigin, _fpsCam.transform.forward, out hit, _weaponRange))
+                if (Physics.Raycast(rayOrigin, _fpsCam.transform.forward, out hit, _gunStats.WeaponRange))
                 {
                     _laserLine.SetPosition(1, hit.point);
                     
-                    // check if the hit object is an enemy
                     EnemyAI enemy = hit.collider.GetComponent<EnemyAI>();
                     if (enemy != null)
                     {
-                        enemy.TakeDamage(_gunDamage);
+                        enemy.TakeDamage(_gunStats.GunDamage);
                         enemy.OnNoiseHeard(_gunEnd.position);
                     }
 
-                    // check if the hit object is a crash crate
                     Interactions.CrashCrate crate = hit.collider.GetComponent<Interactions.CrashCrate>();
                     if (crate != null)
                     {
                         crate.Break();
                     }
 
-                    // check if the hit object has a rigidbody
                     if (hit.rigidbody != null)
                     {
-                        hit.rigidbody.AddForce(-hit.normal * _hitForce);
+                        hit.rigidbody.AddForce(-hit.normal * _gunStats.HitForce);
                     }
                 }
                 else
                 {
-                    _laserLine.SetPosition(1, rayOrigin + (_fpsCam.transform.forward * _weaponRange));
+                    _laserLine.SetPosition(1, rayOrigin + (_fpsCam.transform.forward * _gunStats.WeaponRange));
                 }  
             }
         }

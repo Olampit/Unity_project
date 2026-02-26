@@ -1,8 +1,11 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.UI;
+using TMPro;
+using F21GP.Enemy;
 
-namespace F21GP.Enemy
+namespace F21GP.Core
 {
     public class LayoutSpawner : MonoBehaviour
     {
@@ -18,17 +21,80 @@ namespace F21GP.Enemy
 
         private int currentEnemyCount = 0;
 
-        [Header("Exit")]
-        public Transform exitPoint;
+        [Header("Kill Tracking")]
+        [SerializeField] private int requiredKills = 30;
+        private int totalKillsTracker = 0;
+
+        [Header("Exit Portal")]
+        public GameObject exitPortal;
+
+        [Header("UI")]
+        [SerializeField] private TextMeshProUGUI timerText;
+        [SerializeField] private TextMeshProUGUI killCountText;
+        [SerializeField] private TextMeshProUGUI objectiveMessageText;
+
+        private float levelTimer = 0f;
+        private bool timerRunning = true;
 
         void Start()
         {
             SpawnPlayerRandomly();
             StartCoroutine(SpawnEnemiesOverTime());
-            Debug.Log("LayoutSpawner active on: " + name);
+
+            if (exitPortal != null)
+                exitPortal.SetActive(false);
+
+            UpdateObjectiveMessage();
+
+            UpdateKillCountUI();
         }
 
-        // spawn player randomly
+        void Update()
+        {
+            if (timerRunning)
+            {
+                levelTimer += Time.deltaTime;
+                UpdateTimerUI();
+                UpdateObjectiveMessage();
+            }
+        }
+
+        void UpdateTimerUI()
+        {
+            if (timerText != null)
+            {
+                int minutes = Mathf.FloorToInt(levelTimer / 60f);
+                int seconds = Mathf.FloorToInt(levelTimer % 60f);
+                timerText.text = $"{minutes:00}:{seconds:00}";
+            }
+        }
+
+        void UpdateKillCountUI()
+        {
+            if (killCountText != null)
+                killCountText.text = $"Kills: {totalKillsTracker} / {requiredKills}";
+        }
+
+        void UpdateObjectiveMessage()
+        {
+            if (objectiveMessageText == null) return;
+
+            if (levelTimer < 5f)
+            {
+                objectiveMessageText.gameObject.SetActive(true);
+                objectiveMessageText.text = $"Level 1\nObjective: Kill {requiredKills} enemies to open the extraction portal.";
+            }
+            else if (totalKillsTracker >= requiredKills)
+            {
+                objectiveMessageText.gameObject.SetActive(true);
+                objectiveMessageText.text = $"Extraction portal is now open!\nObjective: Find it and escape!";
+            }
+            else
+            {
+                objectiveMessageText.gameObject.SetActive(false);
+            }
+        }
+
 
         void SpawnPlayerRandomly()
         {
@@ -46,7 +112,6 @@ namespace F21GP.Enemy
             if (cc != null) cc.enabled = true;
         }
 
-        // spawn enemies over time
 
         IEnumerator SpawnEnemiesOverTime()
         {
@@ -55,10 +120,8 @@ namespace F21GP.Enemy
 
             while (true)
             {
-                // Wait first
                 yield return new WaitForSeconds(enemySpawnDelay);
 
-                // Hard guard: do nothing if at capacity
                 if (currentEnemyCount >= maxEnemies)
                     continue;
 
@@ -74,7 +137,6 @@ namespace F21GP.Enemy
                 }
                 else
                 {
-                    // fallback: raycast downward
                     if (Physics.Raycast(spawnPos + Vector3.up * 2f, Vector3.down, out RaycastHit groundHit, 10f))
                     {
                         spawnPos = groundHit.point;
@@ -83,11 +145,7 @@ namespace F21GP.Enemy
 
                 GameObject enemy = Instantiate(enemyPrefab, spawnPos, Quaternion.identity, transform);
 
-
-
                 currentEnemyCount++;
-                Debug.Log($"Enemies alive: {currentEnemyCount}/{maxEnemies}");
-
 
                 EnemyAI ai = enemy.GetComponent<EnemyAI>();
                 if (ai != null)
@@ -99,13 +157,35 @@ namespace F21GP.Enemy
         void HandleEnemyDeath()
         {
             currentEnemyCount = Mathf.Max(0, currentEnemyCount - 1);
+            totalKillsTracker++;
+            UpdateKillCountUI();
+
+            if (totalKillsTracker >= requiredKills)
+            {
+                ActivateExitPortal();
+            }
         }
 
-        // get exit position
+        public void StopTimer()
+        {
+            timerRunning = false;
+        }
+
+        void ActivateExitPortal()
+        {
+            if (exitPortal != null)
+            {
+                exitPortal.SetActive(true);
+            }
+        }
+
 
         public Vector3 GetExitPosition()
         {
-            return exitPoint != null ? exitPoint.position : Vector3.zero;
+            return exitPortal != null ? exitPortal.transform.position : Vector3.zero;
         }
+
+        public float GetLevelTime() => levelTimer;
     }
 }
+

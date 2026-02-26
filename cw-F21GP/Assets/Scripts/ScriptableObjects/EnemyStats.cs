@@ -30,6 +30,13 @@ namespace F21GP.Enemy
         [Header("Crowd & Stun")]
         public float SeparationRadius = 5.0f; // radius of the area where the enemies can separate
         public float SeparationStrength = 1.2f; // strength of the separation
+        public float CohesionStrength = 1.0f; // strength of moving towards the center of the swarm
+        public float AlignmentStrength = 1.0f; // strength of aligning with the swarm's direction
+        public float SwarmMemberAvoidanceRadius = 2.0f; // radius for swarm separation
+        public float LeaderSeparationRadius = 10f; // how far leaders repel each other
+        public float LeaderSeparationStrength = 3f; // how strongly leaders repel each other
+        public float LeaderPlayerSeparationRadius = 6f; // min distance leader keeps from player
+        public float LeaderPlayerSeparationStrength = 2f; // how strongly leader pushes away from player
         public float MinSeparationDistance = 0.8f; // minimum distance between enemies
         public float RetreatDistance = 1.2f; // distance the enemy retreats
         public float StuckVelocityThreshold = 0.05f; // velocity threshold for stuck detection
