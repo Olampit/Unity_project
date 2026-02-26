@@ -34,14 +34,14 @@ namespace F21GP.Player
             if (_characterController == null)
                 _characterController = GetComponent<CharacterController>();
 
-            Cursor.lockState = CursorLockMode.Locked; // lock the cursor to the center of the screen
-            Cursor.visible = false; // hide the cursor
+            Cursor.lockState = CursorLockMode.Locked; 
+            Cursor.visible = false; 
 
             if (_playerStats != null)
             {
                 _currentHealth = _playerStats.MaxHealth;
                 if (_healthBar != null)
-                    _healthBar.UpdateHealthBar(_currentHealth, _playerStats.MaxHealth); // update the health bar initially
+                    _healthBar.UpdateHealthBar(_currentHealth, _playerStats.MaxHealth);
             }
         }
 
@@ -51,20 +51,20 @@ namespace F21GP.Player
             {
                 if (_pauseMenu != null)
                 {
-                    _pauseMenu.TogglePause(); // toggle the pause menu
+                    _pauseMenu.TogglePause(); 
                 }
             }
 
-            if (_pauseMenu != null && _pauseMenu.IsPaused) return; // because we don't want to move the player when the pause menu is open
+            if (_pauseMenu != null && _pauseMenu.IsPaused) return; 
 
             if (Input.GetKeyDown(KeyCode.C) && _playerStats != null && _playerStats.CanDropCrashCrate)
             {
                 DropCrashCrate();
             }
 
-            CalculateMovement(); // calculate the movement of the player
-            CalculateJump(); // calculate the jump of the player
-            CalculateRotation(); // calculate the rotation of the player
+            CalculateMovement(); 
+            CalculateJump(); 
+            CalculateRotation(); 
         }
 
         private void CalculateMovement()
@@ -112,28 +112,16 @@ namespace F21GP.Player
             }
         }
 
-        private void LateUpdate()
-        {
-            // quick test damage on H
-            if (Input.GetKeyDown(KeyCode.H))
-            {
-                TakeDamage(Random.Range(0.5f, 1.5f));
-            }
-        }
-
         private void DropCrashCrate()
         {
             if (_crashCratePrefab != null)
             {
-                // Instantiate crate slightly in front and above the player
                 Vector3 dropPosition = transform.position + transform.forward * 1.5f + Vector3.up * 0.7f - transform.right * 0.5f;
                 GameObject crate = Instantiate(_crashCratePrefab, dropPosition, transform.rotation);
 
-                // If the player adds a Rigidbody to the crate prefab, throw it forward
                 Rigidbody rb = crate.GetComponent<Rigidbody>();
                 if (rb != null)
                 {
-                    // Calculate a throw direction: mostly forward, slightly up
                     Vector3 throwDirection = transform.forward + (Vector3.up * 0.3f);
                     float throwForce = 15f; 
                     
@@ -142,7 +130,6 @@ namespace F21GP.Player
             }
         }
 
-        // Public method enemies can call
         public void TakeDamage(float amount)
         {
             if (_playerStats == null) return;

@@ -37,7 +37,6 @@ namespace F21GP.Core
         {
             SpawnPlayerRandomly();
             StartWave(currentWave);
-            Debug.Log("BossArenaManager active on: " + name);
 
             if (exitPortal != null)
                 exitPortal.SetActive(false);
@@ -107,25 +106,20 @@ namespace F21GP.Core
 
         void StartWave(int waveNumber)
         {
-            Debug.Log($"Starting Wave {waveNumber}");
             
             if (swarmDronePrefab == null || enemySpawnParent == null || enemySpawnParent.childCount == 0)
             {
-                Debug.LogWarning("BossArenaManager: Cannot spawn swarms. Missing prefab or spawn points.");
                 return;
             }
 
-            // If waves are enabled, spawn count corresponds to wave number. Otherwise, use inspector value.
             int currentSwarmsToSpawn = enableWaves ? waveNumber : swarmsToSpawn;
             activeDrones = currentSwarmsToSpawn * dronesPerSwarm;
 
             for (int s = 0; s < currentSwarmsToSpawn; s++)
             {
-                // Each swarm gets its own parent GameObject with a DroneSwarmManager
                 GameObject swarmParent = new GameObject($"Swarm_W{waveNumber}_{s}");
                 DroneSwarmManager manager = swarmParent.AddComponent<DroneSwarmManager>();
 
-                // Pick a spawn point (randomize or cycle)
                 int spawnIndex = Random.Range(0, enemySpawnParent.childCount);
                 Transform spawnPoint = enemySpawnParent.GetChild(spawnIndex);
 
@@ -143,14 +137,12 @@ namespace F21GP.Core
                     
                     GameObject drone = Instantiate(swarmDronePrefab, spawnPos, spawnPoint.rotation, swarmParent.transform);
                     
-                    // Assign drone to this specific swarm
                     SwarmMember member = drone.GetComponent<SwarmMember>();
                     if (member != null)
                     {
                         member.AssignSwarm(manager);
                     }
                     
-                    // Listen to death to progress wave
                     EnemyAI ai = drone.GetComponent<EnemyAI>();
                     if (ai != null)
                     {
@@ -158,7 +150,6 @@ namespace F21GP.Core
                     }
                 }
                 
-                Debug.Log($"Spawned Wave {waveNumber} Swarm {s} at {spawnPoint.name}");
             }
             
             UpdateObjectiveMessage();
@@ -191,27 +182,18 @@ namespace F21GP.Core
         void HandleBossDefeated()
         {
             isVictory = true;
-            Debug.Log($"All Waves Defeated! Time: {levelTimer}s");
-
             ActivateExitPortal();
         }
 
         void ActivateExitPortal()
         {
-            // Stop the timer when boss dies (or you can keep it running until portal entry)
-            // Let's keep it running until portal entry, so we don't stop it here.
-            // If you DO want it to stop exactly when boss dies, uncomment below:
-            // timerRunning = false;
 
-            // Activate the portal object
+  
             if (exitPortal != null)
             {
-                exitPortal.SetActive(true);
-                Debug.Log("Exit Portal Activated!");
-            }
+                exitPortal.SetActive(true);            }
             else
             {
-                // Fallback: load next scene/main menu if no portal is present
                 StartCoroutine(LoadMainMenuDelayed());
             }
             

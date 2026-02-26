@@ -23,7 +23,6 @@ namespace F21GP.Managers
 
         public void GameOver() 
         {
-            Debug.Log("Game Over triggered via GameManager.");
         }
     }
 }

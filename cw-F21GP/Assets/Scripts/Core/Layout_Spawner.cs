@@ -40,7 +40,6 @@ namespace F21GP.Core
         {
             SpawnPlayerRandomly();
             StartCoroutine(SpawnEnemiesOverTime());
-            Debug.Log("LayoutSpawner active on: " + name);
 
             if (exitPortal != null)
                 exitPortal.SetActive(false);
@@ -147,7 +146,6 @@ namespace F21GP.Core
                 GameObject enemy = Instantiate(enemyPrefab, spawnPos, Quaternion.identity, transform);
 
                 currentEnemyCount++;
-                Debug.Log($"Enemies alive: {currentEnemyCount}/{maxEnemies}");
 
                 EnemyAI ai = enemy.GetComponent<EnemyAI>();
                 if (ai != null)
@@ -161,7 +159,6 @@ namespace F21GP.Core
             currentEnemyCount = Mathf.Max(0, currentEnemyCount - 1);
             totalKillsTracker++;
             UpdateKillCountUI();
-            Debug.Log($"Total kills: {totalKillsTracker}/{requiredKills}");
 
             if (totalKillsTracker >= requiredKills)
             {
@@ -179,7 +176,6 @@ namespace F21GP.Core
             if (exitPortal != null)
             {
                 exitPortal.SetActive(true);
-                Debug.Log("Exit Portal Activated!");
             }
         }
 

@@ -158,7 +158,6 @@ namespace F21GP.Enemy
                     if (_enemyStats != null) idleTimer = _enemyStats.IdleTime;
                 }
 
-                Debug.Log($"{name} next patrol index = {patrolIndex}");
 
                 ApplySeparation();
             }

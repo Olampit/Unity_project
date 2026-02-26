@@ -73,16 +73,5 @@ namespace F21GP.Enemy
             SwarmCenter = totalPosition / activeSwarmMembers.Count;
             SwarmHeading = (totalHeading / activeSwarmMembers.Count).normalized;
         }
-        
-        private void OnDrawGizmos()
-        {
-            if (activeSwarmMembers.Count > 0)
-            {
-                Gizmos.color = Color.green;
-                Gizmos.DrawWireSphere(SwarmCenter, 1f);
-                Gizmos.color = Color.blue;
-                Gizmos.DrawLine(SwarmCenter, SwarmCenter + SwarmHeading * 2f);
-            }
-        }
     }
 }

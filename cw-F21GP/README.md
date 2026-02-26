@@ -1,55 +1,132 @@
-# F21GP - Coursework 1 ReadMe
+# F21GP - Coursework 1
 
-This unity project is built around a simple game idea, of a first person shooter, with a twist of survival, featuring character control in 3 dimensions, an EnemyAI system with full Finite State Machines, and navigation with Navmeshes, along with interactive crates that affect the behaviour of enemies's physics.
+This Unity project is built around a first-person survival shooter concept, combining 3D character control, NavMesh-based enemy navigation, Finite State Machine AI, and swarm-based crowd behaviour. Interactive crash crates introduce physics-based gameplay elements that directly influence enemy states and formations.
+
+
 
 ## Architecture
 
-These scripts are located in Assets/Scripts:
+All scripts are located in `Assets/Scripts` and organised under the `F21GP` namespace.
 
-1. **Player Mechanics (F21GP.Player)**:
-    * PlayerCharacterController.cs: A full player controller using Unity's built-in CharacterController. Handles movement (walking/running), jumping, mouselook (camera rotation), logic for throwing crash crates, and health and damage processing.
-    * RayCastShoot.cs: Allows the player to shoot using raycasts, detecting hits on enemy's collider.
 
-2. **Enemy AI (F21GP.Enemy)**:
-    * EnemyAI.cs: Logic to handle enemy pathfinding, targeting player, movement, and damaging health of the player.
 
-3. **Interactables (F21GP.Interactions)**:
-    * CrashCrate.cs: Logic for physics-based interactable crate that can be placed on the map, or the player can throw.
+## 1. Player Mechanics (F21GP.Player)
 
-4. **Game Management (F21GP.Managers)**:
-    * GameManager.cs: A singleton that can be initiated once and accessed globally is our class to manage the game states and global references (such as the Player transform).
+### PlayerCharacterController.cs
+A full first-person controller built using Unity's `CharacterController`. Handles movement (walking, sprinting, jumping), gravity, mouse look, crate throwing logic, health management, and damage processing.  
+This script acts as the central hub for all player-driven gameplay interactions.
 
-5. **UI System (F21GP.UI)**:
-    * Contains scripts for game canvas screens including MainMenu, PauseMenu, GameWonScreen and a GameOverScreen. Includes a HealthBarController for health indication.
+### RayCastShoot.cs
+Implements hitscan shooting using raycasting from the camera forward direction. Detects collisions with enemies and applies damage without using projectile physics.  
+This ensures responsive combat while maintaining performance efficiency.
 
-6. **Data Models (F21GP.ScriptableObjects)**:
-    * Uses Unity's ScriptableObject concept. Data like PlayerStats.cs and EnemyStats.cs are separated from the behavior scripts for easier management in the Unity Editor.
 
-7. **Core Systems (F21GP.Core)**:
-    * Layout_Spawner: For generating enemies in their designated spawn points and sticking to the max enemy count, spawning players in the designated player spawn points, advancing player to consecutive levels.
 
-## Getting Started
+## 2. Enemy AI (F21GP.Enemy)
 
-1. **Engine version**: The unity editor version the game is built on is 2022.3.62f3
-2. **Opening the project**: Add the project path cw-F21GP in Unity Hub and open it.
-3. **Import all Assets**: Add all the required assets from the asset manager.
-3. **Scenes**: Look in Assets/Scenes and ensure GameManager and the Player character persist correctly on entry.
-4. **Edit Stats**: To modify player or enemy health, speed, and damage and other attributes, check the ScriptableObjects in the Project window.
+### EnemyAI.cs
+Controls individual enemy behaviour using a Finite State Machine (Idle, Patrol, Wander, Chase, Attack, Stunned). Uses NavMeshAgent for navigation and raycasting for perception logic.  
+Also manages damage handling, knockback reactions, and transitions between behavioural states.
+
+### DroneSwarmManager.cs
+Manages swarm-level coordination for Level 2 enemies. Implements cohesion, alignment, and separation behaviours inspired by the Boids algorithm.  
+Responsible for assigning leader-follower roles and maintaining structured group movement.
+
+### SwarmMember.cs
+Represents an individual drone within a swarm. Applies steering forces and tracks the swarm leader to maintain formation behaviour.  
+Separates local movement logic from global swarm coordination for modularity.
+
+
+
+## 3. Interactables (F21GP.Interactions)
+
+### CrashCrate.cs
+Physics-based explosive crate that can be placed in the environment or thrown by the player. Applies radial knockback and stun effects to nearby enemies.  
+
+
+
+## 4. Game Management (F21GP.Managers)
+
+### GameManager.cs
+Global manager providing shared references for all other files  
+
+
+
+## 5. UI System (F21GP.UI)
+
+### MainMenu
+Handles scene loading and starting the game.  
+Acts as the primary entry point into gameplay.
+
+### PauseMenu
+Controls time scaling and allows resume or quit actions.  
+Ensures gameplay can be safely paused without disrupting system states.
+
+### GameWonScreen
+Displays victory state once objectives are completed.  
+Provides transition options back to the main menu.
+
+### GameOverScreen
+Triggers when player health reaches zero.  
+Allows restart or return to the main menu.
+
+### HealthBarController
+Updates UI elements based on the player’s health value.  
+Provides real-time feedback linked directly to PlayerCharacterController.
+
+
+
+## 6. Data Models (F21GP.ScriptableObjects)
+
+### PlayerStats.cs
+Stores configurable player attributes such as health, movement speed, sprint multiplier, jump force, and crate throw force.  
+Separates gameplay data from logic for easier balancing inside the Unity Editor.
+
+### EnemyStats.cs
+Stores enemy configuration values including speeds, attack damage, sight range, sight angle, cooldowns, knockback force, and stun duration.  
+Enables rapid tuning of AI behaviour without modifying source code.
+
+
+
+## 7. Core Systems (F21GP.Core)
+
+### Layout_Spawner.cs
+Handles randomised enemy spawning, player spawn positioning, kill tracking, wave progression, and level transitions.  
+Controls pacing, difficulty scaling, and objective completion logic.
+
+### ExitPortal.cs
+Detects player interaction and triggers asynchronous scene transitions between levels.  
+Implements cross-level progression once kill requirements are met.
+
+
 
 ## Controls
-* **Movement**: W, A, S, D
-* **Jump**: Space
-* **Sprint**: Left Shift
-* **Look**: Mouse
-* **Throw Crate**: C
-* **Shoot**: Left Click (assuming default for Raycast Shoot)
-* **Pause**: Escape
 
-##
+- **W, A, S, D** – Movement  
+- **Space** – Jump  
+- **Left Shift** – Sprint  
+- **Mouse** – Look  
+- **C** – Throw Crash Crate  
+- **Left Click** – Shoot  
+- **Escape** – Pause  
 
-All custom code uses C# and is under the F21GP namespace.
 
-## Assets used : 
-ennemies https://assetstore.unity.com/packages/3d/characters/robots/low-poly-combat-drone-82234
-maze layout https://assetstore.unity.com/packages/3d/environments/dungeons/tileable-maze-and-dungeon-blocks-259878
-crash crate https://assetstore.unity.com/packages/3d/props/industrial/crash-crate-161268
+
+## Assets Used
+
+Enemies  
+https://assetstore.unity.com/packages/3d/characters/robots/low-poly-combat-drone-82234  
+
+Maze Layout  
+https://assetstore.unity.com/packages/3d/environments/dungeons/tileable-maze-and-dungeon-blocks-259878  
+
+Crash Crate  
+https://assetstore.unity.com/packages/3d/props/industrial/crash-crate-161268  
+
+general audio : https://assetstore.unity.com/packages/audio/sound-fx/free-sound-effects-pack-155776
+
+doors and levers https://assetstore.unity.com/packages/tools/physics/interactive-physical-door-pack-163249
+
+Loading animation : https://assetstore.unity.com/packages/tools/loading-screen-animation-98505
+
+arm and gun : https://learn.unity.com/tutorial/let-s-try-shooting-with-raycasts
